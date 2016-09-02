@@ -319,10 +319,6 @@ combo.spread <- combo %>%
   ) 
 combo.spread
 
-# # rename columns
-# names(combo.spread)[10] <- 'Trump'
-# names(combo.spread)[11] <- 'Clinton'
-
 # rename columns
 combo.spread <- combo.spread %>%
   rename(
@@ -421,6 +417,14 @@ combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
 
 # see who got the chicken dinner for each county
 head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
+
+
+
+
+
+
+
+
 
 
 
@@ -600,15 +604,6 @@ college.plot + geom_point(aes(colour = candidate, size=fraction_votes)) +
 # labs(fill = "Candidate")
 
 
-college.plot.2 <- ggplot(winner.winner, aes(college, inc_percap))
-college.plot.2 + geom_point(aes(colour = winner)) +
-  # geom_jitter() +
-  labs(title = "Primary Votes of College Educated 2") +
-  xlab("Percent with college degrees") +
-  ylab("Income Per Capita") 
-# labs(fill = "Candidate")
-
-
 # what's up with outlier county with very high population?
 # looks like there's also a county that cast a lot of votes
 qplot(population_2014, votes, data = election)
@@ -636,6 +631,7 @@ find.outliers <- election %>%
 
 
 # -------------- by state -------------
+# summarise things by state
 election.by.state <- election %>%
   group_by(state_abbreviation, candidate) %>%
   summarise(                 
@@ -650,7 +646,7 @@ election.by.state <- election %>%
   ) %>%
   print(n=15)
 
-# sprread election by state
+# spread election by state
 election.by.state.spread <- election.by.state %>% 
   select (
     state_abbreviation, candidate, tot.votes
@@ -668,5 +664,7 @@ election.by.state.spread
 by.state.plot <- ggplot(election.by.state, aes(percap, w.b_gap))
 by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
   facet_grid(. ~ candidate)
+
+
 
 

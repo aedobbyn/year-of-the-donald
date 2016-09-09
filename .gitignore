@@ -3,3 +3,5 @@
 *.Rproj.user
 *.Rnw.tex
 framed.sty
+.Rproj.user
+.Rhistory

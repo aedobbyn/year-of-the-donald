@@ -208,7 +208,7 @@ dems.spread <- dems %>%
     key = candidate,
     value = avg_votes
   )
-kable(dems.spread)
+kable(dems.spread, format = "markdown")
 ```
 
 Get fraction of votes per candidate per state weighted by state population  
@@ -254,7 +254,7 @@ names(general.by.state.spread)[names(general.by.state.spread)=='Hillary Clinton'
 ```
 
 ``` {r kable_general_by_state_spread}
-kable(general.by.state.spread)
+kable(general.by.state.spread, format = "markdown")
 ```
 
 ### Mock head-to-head
@@ -281,7 +281,7 @@ all.or.nothing <- clinton.lead %>%
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
   )
-kable(all.or.nothing)
+kable(all.or.nothing, format = "markdown")
 ```
 
 How many states did each win?
@@ -299,7 +299,7 @@ all.or.nothing.sums <- all.or.nothing %>%
     sum.hil = sum(all.nothing.hillary),
     diff = sum.hil - sum.d
   )
-kable(all.or.nothing.sums)
+kable(all.or.nothing.sums, format = "markdown")
 ```
 
 
@@ -415,7 +415,7 @@ combo.by.state.spread <- combo.by.state %>%
     key = candidate,
     value = tot.votes
   ) 
-kable(combo.by.state.spread)
+kable(combo.by.state.spread, format = "markdown")
 ```
 
 Check the end of the column
@@ -577,7 +577,7 @@ november$population_2014 <- as.numeric(november$population_2014)
 
 Take a look
 ```{r}
-kable(head(november))
+kable(head(november), format = "markdown")
 ```
 
 Norm our predictor variables (population_2014:inc_percap)
@@ -766,7 +766,7 @@ election.by.state.spread <- election.by.state %>%
     key = candidate,
     value = tot.votes
   ) 
-kable(election.by.state.spread)
+kable(election.by.state.spread, format = "markdown")
 ```
 
 percap, w.b_gap, tot.votes by state

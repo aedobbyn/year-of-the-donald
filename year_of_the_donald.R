@@ -76,14 +76,13 @@ primary_2016 <- dbGetQuery(con, "SELECT * FROM primary_2016
 
 # stick variables we want to make into factors in a vector
 to.factor <- c('state', 'state_abbr', 'county', 'party',
-               # 'fips_county_code', 
                'candidate')
 
 # use apply to make those variables factors
 primary_2016[, to.factor] <- data.frame(apply(primary_2016[, to.factor], 2, as.factor))
 
 # make votes numeric so we can do math on them
-primary_2016$votes <- factor(primary_2016$votes)
+primary_2016$votes <- as.numeric(primary_2016$votes)
 
 # print structure and first few rows of the dataframe
 str(primary_2016)
@@ -168,7 +167,7 @@ e.window <- election %>%
     state.fr.votes = mean(fraction_votes),
     state.percap = mean(inc_percap)
   ) %>%
-  select (
+  select (candidate,
     state_abbreviation, votes, fraction_votes, w.b_gap,       # these are county-wide
     n.counties, state.fr.votes, state.percap                  # these are state-wide
   ) %>%
@@ -215,11 +214,10 @@ general.by.state <- election %>%
     pop = sum(population_2014)
     # weight.votes = (mean.by.state*pop)
   ) %>%
-  ungroup %>%
+  # ungroup %>%
   arrange(desc(
     pop), desc(tot.votes)
-  ) %>%
-  print(n = 20)
+  ) 
 general.by.state
 
 
@@ -389,7 +387,7 @@ combo.by.state.spread <- combo.by.state %>%
 combo.by.state.spread
 
 # check the end of the column
-combo.by.state.spread[, c(1, 6:10)]
+combo.by.state.spread[, c(1, 6:ncol(combo.by.state.spread))]
 
 
 # rename columns
@@ -430,6 +428,26 @@ head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
 
 
 # ----------------------------------- models --------------------------------- #
+
+# a couple sample regressions
+library(lme4)
+library(broom)
+
+# linear regression with percent female, percent college, and per capita income
+# predicting whether the winner of that county is Trump or Clinton
+simp_reg <- glm(winner ~ female + college + inc_percap,
+                data=winner.winner, family=binomial())
+tidy(simp_reg)
+
+# mixed model with percent female, percent college, and percent black
+# predicting winner
+# random intercept for state
+mixed.mod <- winner.winner %>% 
+  do(tidy(glmer(winner ~ female + college + black +
+                  (1 | state_abbreviation),
+                data=., family=binomial())))
+mixed.mod
+
 
 # random forest --------------------
 library(randomForest)
@@ -615,13 +633,10 @@ election[which.max(election$population_2014), ]
 
 # take a look at other counties with high populations
 find.outliers <- election %>%
-  select (
-    fips_county_code, population_2014, votes
+  dplyr::select (
+    unique(fips_county_code), population_2014, votes
   ) %>%
   ungroup %>%
-  distinct (
-    fips_county_code
-  ) %>%
   arrange(desc(
     population_2014
   )) %>%

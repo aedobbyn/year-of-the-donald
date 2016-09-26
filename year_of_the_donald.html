@@ -334,7 +334,7 @@ First, only look at Bernie and Hillary</p>
     key = candidate,
     value = avg_votes
   )
-kable(dems.spread)</code></pre>
+kable(dems.spread, format = &quot;markdown&quot;)</code></pre>
 <table>
 <thead>
 <tr class="header">
@@ -579,7 +579,7 @@ Limit to general election candidates</p>
 <p>Rename columns to candidates’ last names</p>
 <pre class="r"><code>names(general.by.state.spread)[names(general.by.state.spread)=='Donald Trump'] &lt;- 'Trump'
 names(general.by.state.spread)[names(general.by.state.spread)=='Hillary Clinton'] &lt;- 'Clinton'</code></pre>
-<pre class="r"><code>kable(general.by.state.spread)</code></pre>
+<pre class="r"><code>kable(general.by.state.spread, format = &quot;markdown&quot;)</code></pre>
 <table>
 <thead>
 <tr class="header">
@@ -810,8 +810,17 @@ clinton.lead</code></pre>
     all.nothing.donald = ifelse(Trump &gt; Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton &gt; Trump, Clinton, 0)
   )
-kable(all.or.nothing)</code></pre>
-<table>
+kable(all.or.nothing, format = &quot;markdown&quot;)</code></pre>
+<table style="width:135%;">
+<colgroup>
+<col width="27%"></col>
+<col width="12%"></col>
+<col width="12%"></col>
+<col width="13%"></col>
+<col width="11%"></col>
+<col width="27%"></col>
+<col width="29%"></col>
+</colgroup>
 <thead>
 <tr class="header">
 <th align="left">state_abbreviation</th>
@@ -1181,7 +1190,7 @@ kable(all.or.nothing)</code></pre>
     sum.hil = sum(all.nothing.hillary),
     diff = sum.hil - sum.d
   )
-kable(all.or.nothing.sums)</code></pre>
+kable(all.or.nothing.sums, format = &quot;markdown&quot;)</code></pre>
 <table>
 <thead>
 <tr class="header">
@@ -1288,8 +1297,19 @@ combo.spread[, -3]</code></pre>
     key = candidate,
     value = tot.votes
   ) 
-kable(combo.by.state.spread)</code></pre>
-<table>
+kable(combo.by.state.spread, format = &quot;markdown&quot;)</code></pre>
+<table style="width:165%;">
+<colgroup>
+<col width="27%"></col>
+<col width="13%"></col>
+<col width="18%"></col>
+<col width="16%"></col>
+<col width="16%"></col>
+<col width="15%"></col>
+<col width="13%"></col>
+<col width="19%"></col>
+<col width="23%"></col>
+</colgroup>
 <thead>
 <tr class="header">
 <th align="left">state_abbreviation</th>
@@ -1879,8 +1899,18 @@ november &lt;- as_tibble(november)</code></pre>
 <p>Make population numeric</p>
 <pre class="r"><code>november$population_2014 &lt;- as.numeric(november$population_2014)</code></pre>
 <p>Take a look</p>
-<pre class="r"><code>kable(head(november))</code></pre>
-<table>
+<pre class="r"><code>kable(head(november), format = &quot;markdown&quot;)</code></pre>
+<table style="width:108%;">
+<colgroup>
+<col width="23%"></col>
+<col width="11%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+<col width="13%"></col>
+<col width="12%"></col>
+<col width="16%"></col>
+<col width="11%"></col>
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">population_2014</th>
@@ -2160,7 +2190,7 @@ According to Google, they are the county with the highest population in the US (
     key = candidate,
     value = tot.votes
   ) 
-kable(election.by.state.spread)</code></pre>
+kable(election.by.state.spread, format = &quot;markdown&quot;)</code></pre>
 <table>
 <thead>
 <tr class="header">

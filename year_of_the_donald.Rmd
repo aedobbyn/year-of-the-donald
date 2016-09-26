@@ -1,0 +1,782 @@
+---
+title: "2016 Primary Analysis"
+author: "Amanda Dobbyn"
+date: "September 24, 2016"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    theme: yeti
+  github_document:
+    toc: true
+---
+
+***
+
+# Overview
+* About:
+    + Data from [Kaggle](https://www.kaggle.com/datasets) can be found in `county_facts_abr.csv` and `primary_results.csv` and loaded in with whatever flavor of `read.csv` you prefer. Then you can pare down to the candidates treated here with `dplyr::filter()` or the base R alternative
+    + More extensive code in `year_of_the_donald.R`
+* Load data:
+    + From a local PostgreSQL database
+* Join the two datasets by county code
+* Analyze:
+    + Group counties into states and from there get vote totals/averages for candidates of interest
+    + Pretend that this is a head to head in the general: look at total number of votes cast for Clinton and Trump
+    + Using an "all-or-nothing" scheme, calculate the "winner" of each county and each state
+* Model
+    + Use demographic variables to train a random forest algorithm that predicts which general election candidate will "win" each county. Calculate the importance of each of these variables to the predictive power of the model
+    + Train a K-nearest neighbors algorithm to do the same
+* Plot:
+    + Plot Clinton's "lead" by state
+    + Plot how various demographic variables affect vote outcomes for the candidates
+
+***
+
+# Load in and join datasets
+
+Load in packages
+```{r load_packages, message=FALSE, warning=FALSE}
+library(knitr)
+library(RPostgreSQL)
+library(tibble)
+library(tidyr)
+library(dplyr)   # remember that MASS::select will mask dplyr::select, so detach MASS or use dplyr::select
+```
+
+### Set up PostgreSQL connection
+Read in 2016 presidential primary data from SQL database
+```{r import_primary_data}
+# set up driver as postgres
+drv <- dbDriver("PostgreSQL")
+
+# set connection to our db
+con <- dbConnect(drv, dbname="pullplay_db", host='localhost', port=5432, user="amanda")
+
+# select all variables for the candidates Bernie, Trump, and Hillary
+primary_2016 <- dbGetQuery(con, "SELECT * FROM primary_2016
+                           WHERE candidate in ('Bernie Sanders', 'Donald Trump', 'Hillary Clinton')") 
+```
+
+### Manipulate variable types
+
+Stick variables we want to make into factors in a vector
+```{r to_factor}
+to.factor <- c('state', 'state_abbr', 'county', 'party',
+               'candidate')
+
+# use apply to make those variables factors
+primary_2016[, to.factor] <- data.frame(apply(primary_2016[, to.factor], 2, as.factor))
+
+# make votes numeric so we can do math on them
+primary_2016$votes <- as.numeric(primary_2016$votes)
+```
+
+Print structure and first few rows of the dataframe
+```{r check_out_primary_str, results="hide"}
+str(primary_2016)
+```
+```{r check_out_primary_head}
+head(primary_2016)
+```
+
+Make primary df into a tibble
+```{r primary_to_tibble}
+primary_2016 <- as_tibble(primary_2016)
+```
+
+
+Import county facts data
+```{r import_county_data}
+# read in county_facts data from database
+county_facts <- dbGetQuery(con, "SELECT * FROM county_facts")
+```
+
+Prepare like primary data
+```{r prep_county_dat}
+to.fact <- c('area_name', 'state_abbreviation')
+county_facts[, to.fact] <- data.frame(apply(county_facts[, to.fact], 2, as.factor))
+county_facts <- as_tibble(county_facts)
+```
+
+Take a look
+```{r peep_county_dat, results='hide'}
+str(county_facts)
+```
+
+```{r check_out_county_head}
+head(county_facts)
+```
+
+### Join datasets
+
+```{r join}
+# take id out of county_facts so join() doesn't join on id
+county <- county_facts %>%
+  select (
+    county_code,
+    state_abbreviation, population_2014,               
+    female, white, black, hispanic, college,
+    inc_percap, inc_household
+  )
+
+# inner join with primary data on county code to get our main dataset
+election <- primary_2016 %>%
+  select(
+    fips_county_code,           
+    state, state_abbr, 
+    party, candidate,
+    votes, fraction_votes
+  ) %>%
+  inner_join(county, by = c("fips_county_code" = "county_code"))
+```
+
+Make election a tibble
+```{r}
+election <- as_tibble(election)
+```
+
+Examine our main dataframe
+```{r peep_election_str, results="hide"}
+str(election)
+```
+
+```{r peep_election_head}
+head(election)
+```
+
+
+```{r make_numeric}
+# make population and votes numeric 
+election$population_2014 <- as.numeric(election$population_2014)
+election$votes <- as.numeric(election$votes)
+```
+
+51 levels of state_abbreviation (from county_facts data) and 49 levels state_abbr (from primary_2016 data)  
+
+See what the 2 level difference is
+```{r sleuthing}
+setdiff(levels(election$state_abbreviation), levels(election$state_abbr))
+```
+So we don't have primary_2016 data from DC and MN
+
+
+### Manipulate election tibble to get a sense of the data
+
+
+Make a window function to calculate state-wide averages per candidate
+while keeping county-wide counts as well
+
+```{r window_func, results="hide", message=FALSE}
+e.window <- election %>%
+  filter (
+    candidate %in% c('Hillary Clinton', 'Donald Trump')
+  ) %>%
+  group_by(state_abbreviation, candidate) %>%
+  mutate(                 
+    n.counties = n(),
+    w.b_gap = (white - black),        
+    state.fr.votes = mean(fraction_votes),
+    state.percap = mean(inc_percap)
+  ) %>%
+  select (
+    state_abbreviation, votes, fraction_votes, w.b_gap,       # these are county-wide
+    n.counties, state.fr.votes, state.percap                  # these are state-wide
+  ) %>%
+  print(n = 10)
+```
+
+
+Get average votes per county per state (i.e., collapse across county)  
+First, only look at Bernie and Hillary
+```{r dems}
+dems <- election %>%
+  na.omit() %>%
+  group_by(state, candidate) %>%
+  filter(candidate %in% c('Bernie Sanders', 'Hillary Clinton')) %>%
+  select(candidate, state, votes, fraction_votes) %>%
+  summarise(
+    avg_votes = mean(votes)
+  ) 
+```
+
+
+Unstack the candidates
+```{r dems_unstack}
+dems.spread <- dems %>%
+  spread (
+    key = candidate,
+    value = avg_votes
+  )
+kable(dems.spread)
+```
+
+Get fraction of votes per candidate per state weighted by state population  
+Limit to general election candidates
+```{r general_by_state, results="hide"}
+general.by.state <- election %>%
+  filter (
+    candidate %in% c('Hillary Clinton', 'Donald Trump')
+  ) %>%
+  group_by(state_abbreviation, candidate) %>%
+  select (
+    state_abbreviation, votes,
+    candidate, population_2014
+  ) %>%
+  summarise (
+    tot.votes = sum(votes),
+    mean.by.state = mean(votes),
+    pop = sum(population_2014)
+    # weight.votes = (mean.by.state*pop)
+  ) %>%
+  ungroup %>%
+  arrange(desc(
+    pop), desc(tot.votes)
+  ) 
+```
+
+Spread total votes per candidate per state
+```{r}
+general.by.state.spread <- general.by.state %>%
+  select(
+    state_abbreviation, candidate, tot.votes
+  ) %>%
+  spread (                  
+    key = candidate,
+    value = tot.votes     # so the value under each candidate's name is the total number of votes they received
+  ) 
+```
+
+Rename columns to candidates' last names
+```{r}
+names(general.by.state.spread)[names(general.by.state.spread)=='Donald Trump'] <- 'Trump'
+names(general.by.state.spread)[names(general.by.state.spread)=='Hillary Clinton'] <- 'Clinton'
+```
+
+``` {r kable_general_by_state_spread}
+kable(general.by.state.spread)
+```
+
+### Mock head-to-head
+
+Pretending that this is a head-to-head (and not totally different primaries), see how much Clinton is winning by in total votes cast per state
+
+```{r clinton_lead, results="hide"}
+clinton.lead <- general.by.state.spread %>%
+  mutate(
+    hil.lead = Clinton - Trump
+  ) 
+clinton.lead
+```
+
+#### Winner take all
+
+Give the loser a 0 in total votes
+
+```{r all_or_nothing}
+all.or.nothing <- clinton.lead %>%
+  na.omit() %>%          # take out rows that contain NAs
+  mutate (
+    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
+    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
+  )
+kable(all.or.nothing)
+```
+
+How many states did each win?
+```{r count_winner}
+length(which(all.or.nothing$winner=='Hil')) # 22
+length(which(all.or.nothing$winner=='Donald')) # 16
+```
+
+How many overall votes did Clinton win by?
+```{r all_nothing_sums}
+all.or.nothing.sums <- all.or.nothing %>%
+  ungroup %>%
+  summarise (
+    sum.d = sum(all.nothing.donald),
+    sum.hil = sum(all.nothing.hillary),
+    diff = sum.hil - sum.d
+  )
+kable(all.or.nothing.sums)
+```
+
+
+
+
+
+
+# The meat of the analysis
+
+Make our main tibble that has both our winner column and demographic data  
+
+Limit to general election candidates
+
+```{r combo, results="hide"}
+combo <- election %>%
+  dplyr::filter (
+    candidate %in% c('Hillary Clinton', 'Donald Trump')
+  ) %>%
+  droplevels() %>%
+  select (
+    state_abbreviation, votes, fips_county_code,
+    candidate, population_2014,
+    female, white, black, hispanic, college, inc_percap
+  ) 
+combo
+```
+
+Check that our only levels are Hillary and Donald
+```{r check_levels_combo}
+levels(combo$candidate)
+```
+
+```{r combo_spread, results="hide"}
+# spread out by candidate
+combo.spread <- combo %>%
+  spread (                  
+    key = candidate,
+    value = votes
+  ) 
+combo.spread
+```
+Rename columns and take a look
+```{r, results="hide"}
+combo.spread <- combo.spread %>%
+  rename(
+    Trump = `Donald Trump`,
+    Clinton = `Hillary Clinton`
+  )
+
+# check out Trump and Clinton columns
+combo.spread[, -3]
+```
+
+
+Add Hillary's lead, all or nothing, and winner columns
+```{r winner_winner}
+winner.winner <- combo.spread %>%
+  na.omit() %>%                         # take out all NAs
+  mutate(
+    hil.lead = Clinton - Trump,
+    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
+    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
+  ) 
+```
+
+Make the winner column a factor
+```{r winner_winner_to_factor}
+winner.winner$winner <- factor(winner.winner$winner)
+```
+
+See who got the chicken dinner for each county
+```{r chicken_dinner}
+head(winner.winner[, c('state_abbreviation', 'fips_county_code', 'winner')])
+```
+
+
+Make a combo for each state
+```{r combo_by_state}
+combo.by.state <- combo %>%
+  group_by(state_abbreviation, candidate) %>%
+  summarise (
+    tot.votes = sum(votes),
+    mean.votes = mean(votes),
+    pop = sum(population_2014),
+    mean.female = mean(female),
+    mean.white = mean(white),
+    mean.black = mean(black),
+    mean.hisp = mean(hispanic),
+    mean.inc = mean(inc_percap)
+    #   mean.Trump = mean(Trump),      # consider making nice.Trump
+    #   mean.Clinton = mean(Clinton)
+  ) %>%
+  arrange(desc(
+    pop), desc(tot.votes)
+  )
+```
+
+```{r, results="hide"}
+str(combo.by.state)
+```
+
+Spread by total votes (can also do by mean.votes)
+```{r combo_by_state_spread}
+combo.by.state.spread <- combo.by.state %>%
+  select (
+    state_abbreviation, candidate,
+    tot.votes, # note that have to take out mean.votes or tot.votes so that don't get NAs in the Trump and Clinton columns
+    pop, mean.female, mean.white, mean.black, mean.hisp, mean.inc
+  ) %>%
+  na.omit() %>%
+  spread (                  
+    key = candidate,
+    value = tot.votes
+  ) 
+kable(combo.by.state.spread)
+```
+
+Check the end of the column
+```{r c_by_st_check_end, results="hide"}
+combo.by.state.spread[, c(1, 6:ncol(combo.by.state.spread))]
+```
+
+Rename columns
+```{r rename_c_by_st}
+combo.by.state.spread <- combo.by.state.spread %>%
+  rename(
+    Trump = `Donald Trump`,
+    Clinton = `Hillary Clinton`
+  )
+```
+
+Add winner stuff
+```{r add_winner}
+combo.by.state.spread <- combo.by.state.spread %>% 
+  na.omit() %>%                         # take out all NAs
+  mutate (
+    hil.lead = Clinton - Trump,
+    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
+    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
+  ) 
+```
+
+Make the winner column a factor
+
+```{r}
+combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
+```
+
+See who got the chicken dinner for each county
+```{r, results="hide"}
+head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
+```
+
+
+
+
+
+
+
+
+
+
+
+## Models
+
+### Mixed model regressions
+
+```{r}
+library(lme4)
+library(broom)
+```
+
+First a linear regression with only fixed effects.  
+Percent female, percent college, and per capita income
+predicting whether the winner of that county is Trump or Clinton.
+```{r simple_reg}
+simp_reg <- glm(winner ~ female + college + inc_percap,
+                data=winner.winner, family=binomial())
+tidy(simp_reg)
+```
+
+Now a mixed model with percent female, percent college, and percent black
+predicting winner.
+Random intercept for state.
+```{r mixed_mod}
+mixed.mod <- winner.winner %>% 
+  do(tidy(glmer(winner ~ female + college + black +
+                  (1 | state_abbreviation),
+                data=., family=binomial())))
+mixed.mod
+```
+
+
+### Random forest
+
+```{r rand_forest_setup, message=FALSE, warning=FALSE}
+library(randomForest)
+library(MASS)     # note that this masks dplyr::select
+```
+
+```{r}
+set.seed(23) # start random num generator at 23 (just for testing purposes)
+```
+
+
+* Classify winner (Donald or Hillary) from county demographic variables
+* DV = winner
+* IVs = population, percent female, percent black, percent hispanic, percent college educated, per capita income
+* 6 IVs so set mtry to sqrt(6) or 2
+
+```{r make_rf_model}
+win.rf <- randomForest(winner ~ population_2014 + female + black +
+                         hispanic + college + inc_percap,
+                       data = winner.winner,
+                       mtry = 2,    # number variables randomly sampled at each split
+                       replace = TRUE,
+                       proximitiy = TRUE, # get matrix of proximity measures
+                       importance = TRUE) # we want to know how important each variable is
+# do.trace = 100) # print output for every 100 trees
+
+# print confusion matrix
+print(win.rf)
+```
+
+Plot result
+```{r plot_rf}
+plot(win.rf)
+```
+
+How important are each of the demographic variables?
+```{r rf_importance}
+round(importance(win.rf), 2)
+```
+Percent black seems to be particularly important  
+
+Detach MASS so we can get dplyr::select back
+```{r, message=FALSE}
+detach(package:MASS)
+```
+
+
+### K Nearest Neighbors
+Adapted from https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.JIcctJU  
+
+Load in class package for `knn()`
+```{r load_class}
+library(class)
+```
+
+Write a function for normalizing predictor variables
+```{r normalize}
+normalize <- function(x) {
+  num <- x - min(x)
+  denom <- max(x) - min(x)
+  return (num/denom)
+}
+```
+
+Keep only some columns and make a new tibble with them called `november`
+```{r}
+want.cols <- c('population_2014', 'female', 'white', 'black', 
+               'hispanic', 'college', 'inc_percap',
+               'winner')
+
+november <- winner.winner[, want.cols]
+november <- as_tibble(november)
+```
+
+Make population numeric
+```{r}
+november$population_2014 <- as.numeric(november$population_2014)
+```
+
+Take a look
+```{r}
+kable(head(november))
+```
+
+Norm our predictor variables (population_2014:inc_percap)
+```{r}
+november.normed <- as.data.frame(lapply(november[ , 1:7], normalize))
+head(november.normed)
+```
+
+Stick the winner names back on to our dataframe
+```{r}
+november.normed <- cbind(november.normed, november[, 8])
+```
+
+Check that our predictors are numeric and winner is a factor
+```{r}
+str(november.normed)
+```
+
+Check dimensions
+```{r}
+dim(november.normed) # 2711 x 8
+```
+
+* Assign rows to training or test at random (i.e., make it so not just first ~1000 are training and last ~2000 are test)
+* Make a vector the same length as our dataset with a random 1 or 2 assigned to each position based on the split we want
+* 1 = training, 2 = test. Train with 1/3 of data, test with 2/3
+```{r}
+rand.num <- sample(c(1, 2), 
+                   nrow(november.normed), replace=T, 
+                   prob=c((1/3), (2/3)))
+
+```
+
+Split dataset into training and test, and take out the target variable  
+Take the row numbers of all the 1s in the rand.num vector (vector that is separate and apart from our dataframe)  
+Use all columns except the target
+```{r}
+nov.train <- november.normed[rand.num==1, 1:7]
+nov.test <- november.normed[rand.num==2, 1:7]
+```
+
+Store the target variable (winner) in a vector
+```{r}
+nov.train.labels <- november.normed[rand.num==1, 8]
+nov.test.labels <- november.normed[rand.num==2, 8]
+```
+
+Make sure that we have the right split
+(should be about 33%-67% split)
+```{r}
+nrow(nov.train)   # number of rows in training and test dataframes
+nrow(nov.test)
+length(nov.train.labels)    # length of target label vector
+length(nov.test.labels)
+
+```
+
+#### Our model
+
+Uses data frame nov.train and actual answer in vector nov.train.labels
+to classify data frame nov.test into new vector nov.pred
+```{r}
+nov.pred <- knn(train=nov.train, test=nov.test, cl=nov.train.labels, k=3, prob=T)
+```
+
+Sook at some of the precited vector
+```{r}
+nov.pred[1:10]
+```
+
+```{r}
+# see how well the model did
+library(gmodels)
+CrossTable(nov.test.labels, nov.pred, prop.chisq = F)
+```
+Seems to classify Trump much better than Clinton, maybe because he won more overall counties so more data -> better prediction
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Plots
+
+Would love to integrate a map of the US with this data
+
+```{r attach_ggplot, message=FALSE, warning=FALSE}
+library(ggplot2)
+```
+
+Bar graphs for each state plotting whether Clinton won or lost in a fake head-to-head with Trump
+```{r hil_lead_plot}
+hil.lead.plot <- ggplot(clinton.lead) +
+  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') 
+# here there be labs
+hil.lead.plot
+```
+
+### Integrate demographic variables
+For each county, plot fraction of votes received against percent white for each candidate
+```{r white_plot}
+white.plot <- ggplot(election, aes(white, fraction_votes))
+white.plot + geom_point(aes(colour = candidate, size=population_2014)) +
+  # geom_jitter(position = position_jitter()) +    # figure out how to make this not look like it got the bubonic plague
+  labs(title = "Primary Votes of Whites") +
+  xlab("Percent of county that is white") +
+  ylab("Fraction of votes received")
+# so at low percent white (left half of graph), Hillary does best and Bernie does worst
+# at high percent white it's more of a jumble
+```
+
+Size of point as fraction of vote
+```{r college_plot}
+college.plot <- ggplot(election, aes(college, votes))
+college.plot + geom_point(aes(colour = candidate, size=fraction_votes)) +
+  # geom_jitter() +
+  labs(title = "Primary Votes of College Educated") +
+  xlab("Percent with college degrees") +
+  ylab("Number of votes") 
+```
+
+What's up with outlier county with very high population?  
+Looks like there's also a county that cast a lot of votes
+```{r qplot_pop}
+qplot(population_2014, votes, data = election)
+```
+
+```{r find_outlier_max}
+election[which.max(election$population_2014), ]
+```
+So the outlier is FIPS code 6037 (LA county).  
+According to Google, they are the county with the highest population in the US (9,818,605).
+Second is Cook County, IL at 5,194,675 (woot!)  
+
+<br>
+
+Take a look at other counties with high populations
+```{r find_outliers}
+find.outliers <- election %>%
+  dplyr::select (
+    unique(fips_county_code), population_2014, votes
+  ) %>%
+  ungroup %>%
+  arrange(desc(
+    population_2014
+  )) %>%
+  print(n = 10)
+```
+
+
+
+### By state
+
+Summarise things by state
+
+```{r election_by_state}
+election.by.state <- election %>%
+  group_by(state_abbreviation, candidate) %>%
+  summarise(                 
+    w.b_gap = mean(white - black),           # w.b_gap for white-black gap
+    fr.votes = mean(fraction_votes),
+    tot.votes = sum(votes),
+    percap = mean(inc_percap)
+  ) %>%
+  ungroup %>%
+  arrange(
+    percap
+  )
+```
+
+Spread election by state
+```{r election_by_state_spread}
+election.by.state.spread <- election.by.state %>% 
+  select (
+    state_abbreviation, candidate, tot.votes
+  ) %>%
+  group_by(candidate) %>%
+  spread (                  
+    key = candidate,
+    value = tot.votes
+  ) 
+kable(election.by.state.spread)
+```
+
+percap, w.b_gap, tot.votes by state
+for all three candidates
+``` {r by_state_plot}
+by.state.plot <- ggplot(election.by.state, aes(percap, w.b_gap))
+by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
+  facet_grid(. ~ candidate)
+
+```
+
+
+

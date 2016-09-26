@@ -1,5 +1,8 @@
 # OS file #
 .DS_Store
+
+# Rproj stuff #
+*.Rproj
 *.Rproj.user
 *.Rnw.tex
 framed.sty

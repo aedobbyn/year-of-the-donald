@@ -343,7 +343,7 @@ winner.winner
 winner.winner$winner <- factor(winner.winner$winner)
 
 
-# see who got the chicken dinner for each county
+# see who got the chicken dinner for each state
 head(winner.winner[, c('state_abbreviation', 'fips_county_code', 'winner')])
 
 
@@ -673,6 +673,9 @@ election.by.state.spread <- election.by.state %>%
   select (
     state_abbreviation, candidate, tot.votes
   ) %>%
+  rename(
+    State = state_abbreviation
+  ) %>% 
   group_by(candidate) %>%
   spread (                  
     key = candidate,

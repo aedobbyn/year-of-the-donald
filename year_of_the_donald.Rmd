@@ -795,6 +795,9 @@ election.by.state.spread <- election.by.state %>%
   select (
     state_abbreviation, candidate, tot.votes
   ) %>%
+  rename(
+    State = state_abbreviation
+  ) %>% 
   group_by(candidate) %>%
   spread (                  
     key = candidate,

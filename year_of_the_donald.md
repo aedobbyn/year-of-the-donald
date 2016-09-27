@@ -2,6 +2,8 @@
 Amanda Dobbyn  
 September 24, 2016  
 
+
+
 ***
 
 # Overview
@@ -33,20 +35,25 @@ library(knitr)
 library(RPostgreSQL)
 library(tibble)
 library(tidyr)
-library(dplyr)   # remember that MASS::select will mask dplyr::select, so detach MASS or use dplyr::select
+library(dplyr)   # remember, MASS::select and dplyr::select will mask each other
 ```
 
 ### Set up PostgreSQL connection
 Read in 2016 presidential primary data from SQL database
 
+* Set up driver as Postgres
+* Set connection to our db
+
+
 ```r
-# set up driver as postgres
 drv <- dbDriver("PostgreSQL")
 
-# set connection to our db
 con <- dbConnect(drv, dbname="pullplay_db", host='localhost', port=5432, user="amanda")
+```
 
-# select all variables for the candidates Bernie, Trump, and Hillary
+Select all variables for the candidates Bernie, Trump, and Hillary
+
+```r
 primary_2016 <- dbGetQuery(con, "SELECT * FROM primary_2016
                            WHERE candidate in ('Bernie Sanders', 'Donald Trump', 'Hillary Clinton')") 
 ```
@@ -58,11 +65,17 @@ Stick variables we want to make into factors in a vector
 ```r
 to.factor <- c('state', 'state_abbr', 'county', 'party',
                'candidate')
+```
 
-# use apply to make those variables factors
+Make those variables factors
+
+```r
 primary_2016[, to.factor] <- data.frame(apply(primary_2016[, to.factor], 2, as.factor))
+```
 
-# make votes numeric so we can do math on them
+Make `votes` numeric so we can do math on them
+
+```r
 primary_2016$votes <- as.numeric(primary_2016$votes)
 ```
 
@@ -73,25 +86,19 @@ str(primary_2016)
 ```
 
 ```r
-head(primary_2016)
+kable(head(primary_2016), format="markdown")
 ```
 
-```
-##   id   state state_abbr  county fips_county_code    party       candidate
-## 1  1 Alabama         AL Autauga             1001 Democrat  Bernie Sanders
-## 2  2 Alabama         AL Autauga             1001 Democrat Hillary Clinton
-## 3  3 Alabama         AL Baldwin             1003 Democrat  Bernie Sanders
-## 4  4 Alabama         AL Baldwin             1003 Democrat Hillary Clinton
-## 5  5 Alabama         AL Barbour             1005 Democrat  Bernie Sanders
-## 6  6 Alabama         AL Barbour             1005 Democrat Hillary Clinton
-##   votes fraction_votes
-## 1   544          0.182
-## 2  2387          0.800
-## 3  2694          0.329
-## 4  5290          0.647
-## 5   222          0.078
-## 6  2567          0.906
-```
+
+
+| id|state   |state_abbr |county  | fips_county_code|party    |candidate       | votes| fraction_votes|
+|--:|:-------|:----------|:-------|----------------:|:--------|:---------------|-----:|--------------:|
+|  1|Alabama |AL         |Autauga |             1001|Democrat |Bernie Sanders  |   544|          0.182|
+|  2|Alabama |AL         |Autauga |             1001|Democrat |Hillary Clinton |  2387|          0.800|
+|  3|Alabama |AL         |Baldwin |             1003|Democrat |Bernie Sanders  |  2694|          0.329|
+|  4|Alabama |AL         |Baldwin |             1003|Democrat |Hillary Clinton |  5290|          0.647|
+|  5|Alabama |AL         |Barbour |             1005|Democrat |Bernie Sanders  |   222|          0.078|
+|  6|Alabama |AL         |Barbour |             1005|Democrat |Hillary Clinton |  2567|          0.906|
 
 Make primary df into a tibble
 
@@ -100,10 +107,9 @@ primary_2016 <- as_tibble(primary_2016)
 ```
 
 
-Import county facts data
+Import county facts data from local database
 
 ```r
-# read in county_facts data from database
 county_facts <- dbGetQuery(con, "SELECT * FROM county_facts")
 ```
 
@@ -123,28 +129,25 @@ str(county_facts)
 
 
 ```r
-head(county_facts)
+kable(head(county_facts), format="markdown")
 ```
 
-```
-## # A tibble: 6 × 12
-##      id county_code      area_name state_abbreviation population_2014
-##   <int>       <int>         <fctr>             <fctr>           <int>
-## 1     1           0  United States                 NA       318857056
-## 2     2        1000        Alabama                 NA         4849377
-## 3     3        1001 Autauga County                 AL           55395
-## 4     4        1003 Baldwin County                 AL          200111
-## 5     5        1005 Barbour County                 AL           26887
-## 6     6        1007    Bibb County                 AL           22506
-## # ... with 7 more variables: female <dbl>, white <dbl>, black <dbl>,
-## #   hispanic <dbl>, college <dbl>, inc_percap <dbl>, inc_household <dbl>
-```
+
+
+| id| county_code|area_name      |state_abbreviation | population_2014| female| white| black| hispanic| college| inc_percap| inc_household|
+|--:|-----------:|:--------------|:------------------|---------------:|------:|-----:|-----:|--------:|-------:|----------:|-------------:|
+|  1|           0|United States  |NA                 |       318857056|   50.8|  77.4|  13.2|     17.4|    28.8|      28155|         53046|
+|  2|        1000|Alabama        |NA                 |         4849377|   51.5|  69.7|  26.7|      4.1|    22.6|      23680|         43253|
+|  3|        1001|Autauga County |AL                 |           55395|   51.4|  77.9|  18.7|      2.7|    20.9|      24571|         53682|
+|  4|        1003|Baldwin County |AL                 |          200111|   51.2|  87.1|   9.6|      4.6|    27.7|      26766|         50221|
+|  5|        1005|Barbour County |AL                 |           26887|   46.6|  50.2|  47.6|      4.5|    13.4|      16829|         32911|
+|  6|        1007|Bibb County    |AL                 |           22506|   45.9|  76.3|  22.1|      2.1|    12.1|      17427|         36447|
 
 ### Join datasets
 
+Take id out of county_facts so join() doesn't join on id
 
 ```r
-# take id out of county_facts so join() doesn't join on id
 county <- county_facts %>%
   select (
     county_code,
@@ -152,8 +155,11 @@ county <- county_facts %>%
     female, white, black, hispanic, college,
     inc_percap, inc_household
   )
+```
 
-# inner join with primary data on county code to get our main dataset
+Inner join with primary data on county code to get our main dataset
+
+```r
 election <- primary_2016 %>%
   select(
     fips_county_code,           
@@ -178,34 +184,28 @@ str(election)
 
 
 ```r
-head(election)
-```
-
-```
-## # A tibble: 6 × 16
-##   fips_county_code   state state_abbr    party       candidate votes
-##              <dbl>  <fctr>     <fctr>   <fctr>          <fctr> <dbl>
-## 1             1001 Alabama         AL Democrat  Bernie Sanders   544
-## 2             1001 Alabama         AL Democrat Hillary Clinton  2387
-## 3             1003 Alabama         AL Democrat  Bernie Sanders  2694
-## 4             1003 Alabama         AL Democrat Hillary Clinton  5290
-## 5             1005 Alabama         AL Democrat  Bernie Sanders   222
-## 6             1005 Alabama         AL Democrat Hillary Clinton  2567
-## # ... with 10 more variables: fraction_votes <dbl>,
-## #   state_abbreviation <fctr>, population_2014 <int>, female <dbl>,
-## #   white <dbl>, black <dbl>, hispanic <dbl>, college <dbl>,
-## #   inc_percap <dbl>, inc_household <dbl>
+kable(head(election), format="markdown")
 ```
 
 
+
+| fips_county_code|state   |state_abbr |party    |candidate       | votes| fraction_votes|state_abbreviation | population_2014| female| white| black| hispanic| college| inc_percap| inc_household|
+|----------------:|:-------|:----------|:--------|:---------------|-----:|--------------:|:------------------|---------------:|------:|-----:|-----:|--------:|-------:|----------:|-------------:|
+|             1001|Alabama |AL         |Democrat |Bernie Sanders  |   544|          0.182|AL                 |           55395|   51.4|  77.9|  18.7|      2.7|    20.9|      24571|         53682|
+|             1001|Alabama |AL         |Democrat |Hillary Clinton |  2387|          0.800|AL                 |           55395|   51.4|  77.9|  18.7|      2.7|    20.9|      24571|         53682|
+|             1003|Alabama |AL         |Democrat |Bernie Sanders  |  2694|          0.329|AL                 |          200111|   51.2|  87.1|   9.6|      4.6|    27.7|      26766|         50221|
+|             1003|Alabama |AL         |Democrat |Hillary Clinton |  5290|          0.647|AL                 |          200111|   51.2|  87.1|   9.6|      4.6|    27.7|      26766|         50221|
+|             1005|Alabama |AL         |Democrat |Bernie Sanders  |   222|          0.078|AL                 |           26887|   46.6|  50.2|  47.6|      4.5|    13.4|      16829|         32911|
+|             1005|Alabama |AL         |Democrat |Hillary Clinton |  2567|          0.906|AL                 |           26887|   46.6|  50.2|  47.6|      4.5|    13.4|      16829|         32911|
+
+Make population and votes numeric
 
 ```r
-# make population and votes numeric 
 election$population_2014 <- as.numeric(election$population_2014)
 election$votes <- as.numeric(election$votes)
 ```
 
-51 levels of state_abbreviation (from county_facts data) and 49 levels state_abbr (from primary_2016 data)  
+There are 51 levels of `state_abbreviation` (from `county_facts` data) and 49 levels of `state_abbr` (from `primary_2016` data)  
 
 See what the 2 level difference is
 
@@ -218,9 +218,10 @@ setdiff(levels(election$state_abbreviation), levels(election$state_abbr))
 ```
 So we don't have primary_2016 data from DC and MN
 
+***
+# Exploratory Analysis
 
-### Manipulate election tibble to get a sense of the data
-
+* Manipulate election tibble to get a sense of the data  
 
 Make a window function to calculate state-wide averages per candidate
 while keeping county-wide counts as well
@@ -246,8 +247,10 @@ e.window <- election %>%
 ```
 
 
-Get average votes per county per state (i.e., collapse across county)  
-First, only look at Bernie and Hillary
+#### Democrats
+First, only look at Bernie and Hillary  
+
+Get *average votes* per county per state (i.e., collapse across county)  
 
 ```r
 dems <- election %>%
@@ -259,7 +262,6 @@ dems <- election %>%
     avg_votes = mean(votes)
   ) 
 ```
-
 
 Unstack the candidates
 
@@ -317,8 +319,10 @@ kable(dems.spread, format = "markdown")
 |Wisconsin      |    7888.000000|     6010.652778|
 |Wyoming        |       6.782609|        5.391304|
 
-Get fraction of votes per candidate per state weighted by state population  
-Limit to general election candidates
+## General election
+Now limit to general election candidates  
+
+Get average and total votes per candidate per state  
 
 ```r
 general.by.state <- election %>%
@@ -334,7 +338,6 @@ general.by.state <- election %>%
     tot.votes = sum(votes),
     mean.by.state = mean(votes),
     pop = sum(population_2014)
-    # weight.votes = (mean.by.state*pop)
   ) %>%
   ungroup %>%
   arrange(desc(
@@ -342,7 +345,7 @@ general.by.state <- election %>%
   ) 
 ```
 
-Spread total votes per candidate per state
+Spread *total votes* per candidate per state
 
 ```r
 general.by.state.spread <- general.by.state %>%
@@ -508,18 +511,18 @@ How many overall votes did Clinton win by?
 all.or.nothing.sums <- all.or.nothing %>%
   ungroup %>%
   summarise (
-    sum.d = sum(all.nothing.donald),
-    sum.hil = sum(all.nothing.hillary),
-    diff = sum.hil - sum.d
+    `Trump total votes` = sum(all.nothing.donald),
+    `Clinton total votes` = sum(all.nothing.hillary),
+    `Clinton - Trump difference` = `Clinton total votes` - `Trump total votes`
   )
 kable(all.or.nothing.sums, format = "markdown")
 ```
 
 
 
-|   sum.d|  sum.hil|    diff|
-|-------:|--------:|-------:|
-| 4234662| 11193224| 6958562|
+| Trump total votes| Clinton total votes| Clinton - Trump difference|
+|-----------------:|-------------------:|--------------------------:|
+|           4234662|            11193224|                    6958562|
 
 
 
@@ -557,9 +560,9 @@ levels(combo$candidate)
 ## [1] "Donald Trump"    "Hillary Clinton"
 ```
 
+Spread out by candidate
 
 ```r
-# spread out by candidate
 combo.spread <- combo %>%
   spread (                  
     key = candidate,
@@ -575,9 +578,30 @@ combo.spread <- combo.spread %>%
     Trump = `Donald Trump`,
     Clinton = `Hillary Clinton`
   )
+```
 
-# check out Trump and Clinton columns
+Check out Trump and Clinton columns
+
+```r
 combo.spread[, -3]
+```
+
+```
+## # A tibble: 2,798 × 10
+##    state_abbreviation fips_county_code female white black hispanic college
+##                <fctr>            <dbl>  <dbl> <dbl> <dbl>    <dbl>   <dbl>
+## 1                  AL             1001   51.4  77.9  18.7      2.7    20.9
+## 2                  AL             1003   51.2  87.1   9.6      4.6    27.7
+## 3                  AL             1005   46.6  50.2  47.6      4.5    13.4
+## 4                  AL             1007   45.9  76.3  22.1      2.1    12.1
+## 5                  AL             1009   50.5  96.0   1.8      8.7    12.1
+## 6                  AL             1011   45.3  26.9  70.1      7.5    12.5
+## 7                  AL             1013   53.6  53.9  44.0      1.2    14.0
+## 8                  AL             1015   51.8  75.8  21.1      3.5    16.1
+## 9                  AL             1017   52.3  58.3  39.5      2.0    11.8
+## 10                 AL             1019   50.2  93.0   4.6      1.5    12.8
+## # ... with 2,788 more rows, and 3 more variables: inc_percap <dbl>,
+## #   Trump <dbl>, Clinton <dbl>
 ```
 
 
@@ -633,8 +657,6 @@ combo.by.state <- combo %>%
     mean.black = mean(black),
     mean.hisp = mean(hispanic),
     mean.inc = mean(inc_percap)
-    #   mean.Trump = mean(Trump),      # consider making nice.Trump
-    #   mean.Clinton = mean(Clinton)
   ) %>%
   arrange(desc(
     pop), desc(tot.votes)
@@ -744,7 +766,7 @@ Make the winner column a factor
 combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
 ```
 
-See who got the chicken dinner for each county
+See who won each state
 
 ```r
 head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
@@ -762,49 +784,37 @@ head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
 
 ## Models
 
-### Mixed model regressions
-
+#### Regression models
 
 ```r
 library(lme4)
-```
-
-```
-## Loading required package: Matrix
-```
-
-```
-## 
-## Attaching package: 'Matrix'
-```
-
-```
-## The following object is masked from 'package:tidyr':
-## 
-##     expand
-```
-
-```r
 library(broom)
 ```
 
 First a linear regression with only fixed effects.  
 Percent female, percent college, and per capita income
-predicting whether the winner of that county is Trump or Clinton.
+predicting whether the winner of that county is Trump or Clinton.  
+
+<br>
+
+Clinton coded as 1, Trump as 0.
 
 ```r
 simp_reg <- glm(winner ~ female + college + inc_percap,
                 data=winner.winner, family=binomial())
-tidy(simp_reg)
+kable(tidy(simp_reg), format="markdown")
 ```
 
-```
-##          term      estimate    std.error statistic      p.value
-## 1 (Intercept) -4.9841551844 1.169713e+00 -4.261007 2.035078e-05
-## 2      female  0.1060329419 2.329294e-02  4.552149 5.310078e-06
-## 3     college  0.0901754919 8.477477e-03 10.637067 2.003359e-26
-## 4  inc_percap -0.0001298248 1.384776e-05 -9.375148 6.907855e-21
-```
+
+
+|term        |   estimate| std.error| statistic|  p.value|
+|:-----------|----------:|---------:|---------:|--------:|
+|(Intercept) | -4.9841552| 1.1697130| -4.261007| 2.04e-05|
+|female      |  0.1060329| 0.0232929|  4.552149| 5.30e-06|
+|college     |  0.0901755| 0.0084775| 10.637067| 0.00e+00|
+|inc_percap  | -0.0001298| 0.0000138| -9.375148| 0.00e+00|
+Suggests that women and college-educated people prefer Clinton, whereas Trump does better in wealthier counties.
+
 
 Now a mixed model with percent female, percent college, and percent black
 predicting winner.
@@ -815,23 +825,19 @@ mixed.mod <- winner.winner %>%
   do(tidy(glmer(winner ~ female + college + black +
                   (1 | state_abbreviation),
                 data=., family=binomial())))
-mixed.mod
+kable(mixed.mod, format="markdown")
 ```
 
-```
-##                                term    estimate   std.error  statistic
-## 1                       (Intercept) -5.55115591 1.432720375 -3.8745564
-## 2                            female  0.02043102 0.028276606  0.7225414
-## 3                           college  0.07334044 0.007488347  9.7939428
-## 4                             black  0.15502298 0.008468168 18.3065547
-## 5 sd_(Intercept).state_abbreviation  1.97424323          NA         NA
-##        p.value              group
-## 1 1.068191e-04              fixed
-## 2 4.699617e-01              fixed
-## 3 1.195414e-22              fixed
-## 4 7.336759e-75              fixed
-## 5           NA state_abbreviation
-```
+
+
+|term                              |   estimate| std.error|  statistic|   p.value|group              |
+|:---------------------------------|----------:|---------:|----------:|---------:|:------------------|
+|(Intercept)                       | -5.5511559| 1.4327204| -3.8745564| 0.0001068|fixed              |
+|female                            |  0.0204310| 0.0282766|  0.7225414| 0.4699617|fixed              |
+|college                           |  0.0733404| 0.0074883|  9.7939428| 0.0000000|fixed              |
+|black                             |  0.1550230| 0.0084682| 18.3065547| 0.0000000|fixed              |
+|sd_(Intercept).state_abbreviation |  1.9742432|        NA|         NA|        NA|state_abbreviation |
+Percent black is an important factor with counties with higher black populations more likely to support Clinton.
 
 
 ### Random forest
@@ -842,9 +848,10 @@ library(randomForest)
 library(MASS)     # note that this masks dplyr::select
 ```
 
+Start random num generator at 23 (just for testing purposes)
 
 ```r
-set.seed(23) # start random num generator at 23 (just for testing purposes)
+set.seed(23) 
 ```
 
 
@@ -862,9 +869,11 @@ win.rf <- randomForest(winner ~ population_2014 + female + black +
                        replace = TRUE,
                        proximitiy = TRUE, # get matrix of proximity measures
                        importance = TRUE) # we want to know how important each variable is
-# do.trace = 100) # print output for every 100 trees
+```
 
-# print confusion matrix
+Print confusion matrix
+
+```r
 print(win.rf)
 ```
 
@@ -883,14 +892,6 @@ print(win.rf)
 ## Hil       379 406  0.48280255
 ```
 
-Plot result
-
-```r
-plot(win.rf)
-```
-
-![](year_of_the_donald_files/figure-html/plot_rf-1.png)<!-- -->
-
 How important are each of the demographic variables?
 
 ```r
@@ -908,7 +909,7 @@ round(importance(win.rf), 2)
 ```
 Percent black seems to be particularly important  
 
-Detach MASS so we can get dplyr::select back
+Detach `MASS` so we can get `dplyr::select` back
 
 ```r
 detach(package:MASS)
@@ -916,9 +917,9 @@ detach(package:MASS)
 
 
 ### K Nearest Neighbors
-Adapted from https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.JIcctJU  
+Adapted from a [DataCamp tutorial](https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.JIcctJU)  
 
-Load in class package for `knn()`
+Load in `class` package for `knn()`
 
 ```r
 library(class)
@@ -975,23 +976,6 @@ november.normed <- as.data.frame(lapply(november[ , 1:7], normalize))
 head(november.normed)
 ```
 
-```
-##   population_2014    female     white      black   hispanic   college
-## 1     0.005467143 0.7977528 0.7708779 0.21974148 0.02615063 0.2485955
-## 2     0.019771922 0.7902622 0.8693790 0.11280846 0.04602510 0.3441011
-## 3     0.002649205 0.6179775 0.4743041 0.55934195 0.04497908 0.1432584
-## 4     0.002216155 0.5917603 0.7537473 0.25969448 0.01987448 0.1250000
-## 5     0.005696864 0.7640449 0.9646681 0.02115159 0.08891213 0.1250000
-## 6     0.001055491 0.5692884 0.2248394 0.82373678 0.07635983 0.1306180
-##   inc_percap
-## 1  0.2941187
-## 2  0.3349712
-## 3  0.1500279
-## 4  0.1611576
-## 5  0.2226317
-## 6  0.1835101
-```
-
 Stick the winner names back on to our dataframe
 
 ```r
@@ -1019,12 +1003,13 @@ str(november.normed)
 Check dimensions
 
 ```r
-dim(november.normed) # 2711 x 8
+dim(november.normed) 
 ```
 
 ```
 ## [1] 2711    8
 ```
+So we have 2711 rows and 8 columns  
 
 * Assign rows to training or test at random (i.e., make it so not just first ~1000 are training and last ~2000 are test)
 * Make a vector the same length as our dataset with a random 1 or 2 assigned to each position based on the split we want
@@ -1036,9 +1021,9 @@ rand.num <- sample(c(1, 2),
                    prob=c((1/3), (2/3)))
 ```
 
-Split dataset into training and test, and take out the target variable  
-Take the row numbers of all the 1s in the rand.num vector (vector that is separate and apart from our dataframe)  
-Use all columns except the target
+* Split dataset into training and test, and take out the target variable  
+* Take the row numbers of all the 1s in the rand.num vector (vector that is separate and apart from our dataframe)  
+* Use all columns except the target  
 
 ```r
 nov.train <- november.normed[rand.num==1, 1:7]
@@ -1064,19 +1049,20 @@ nrow(nov.train)   # number of rows in training and test dataframes
 ```
 
 ```r
-nrow(nov.test)
-```
-
-```
-## [1] 1767
-```
-
-```r
 length(nov.train.labels)    # length of target label vector
 ```
 
 ```
 ## [1] 944
+```
+
+
+```r
+nrow(nov.test)
+```
+
+```
+## [1] 1767
 ```
 
 ```r
@@ -1107,9 +1093,9 @@ nov.pred[1:10]
 ## Levels: Donald Hil
 ```
 
+See how well the model did
 
 ```r
-# see how well the model did
 library(gmodels)
 CrossTable(nov.test.labels, nov.pred, prop.chisq = F)
 ```
@@ -1175,17 +1161,11 @@ Bar graphs for each state plotting whether Clinton won or lost in a fake head-to
 
 ```r
 hil.lead.plot <- ggplot(clinton.lead) +
-  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') 
-# here there be labs
+  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') +
+  xlab("State") +
+  ylab("Clinton's Lead")
+
 hil.lead.plot
-```
-
-```
-## Warning: Removed 2 rows containing missing values (position_stack).
-```
-
-```
-## Warning: Stacking not well defined when ymin != 0
 ```
 
 ![](year_of_the_donald_files/figure-html/hil_lead_plot-1.png)<!-- -->
@@ -1196,34 +1176,30 @@ For each county, plot fraction of votes received against percent white for each 
 ```r
 white.plot <- ggplot(election, aes(white, fraction_votes))
 white.plot + geom_point(aes(colour = candidate, size=population_2014)) +
-  # geom_jitter(position = position_jitter()) +    # figure out how to make this not look like it got the bubonic plague
   labs(title = "Primary Votes of Whites") +
   xlab("Percent of county that is white") +
-  ylab("Fraction of votes received")
+  ylab("Fraction of votes received") +
+  labs(colour = "Candidate", size = "Population in 2014")
 ```
 
 ![](year_of_the_donald_files/figure-html/white_plot-1.png)<!-- -->
-
-```r
-# so at low percent white (left half of graph), Hillary does best and Bernie does worst
-# at high percent white it's more of a jumble
-```
+So at low percent white (left half of graph), Hillary does best and Bernie does worst at high percent white it's more of a jumble  
 
 Size of point as fraction of vote
 
 ```r
 college.plot <- ggplot(election, aes(college, votes))
 college.plot + geom_point(aes(colour = candidate, size=fraction_votes)) +
-  # geom_jitter() +
   labs(title = "Primary Votes of College Educated") +
   xlab("Percent with college degrees") +
-  ylab("Number of votes") 
+  ylab("Number of votes") +
+  labs(colour = "Candidate", size = "Fraction of votes")
 ```
 
 ![](year_of_the_donald_files/figure-html/college_plot-1.png)<!-- -->
 
 What's up with outlier county with very high population?  
-Looks like there's also a county that cast a lot of votes
+Plot population per county against votes cast per county
 
 ```r
 qplot(population_2014, votes, data = election)
@@ -1231,24 +1207,23 @@ qplot(population_2014, votes, data = election)
 
 ![](year_of_the_donald_files/figure-html/qplot_pop-1.png)<!-- -->
 
+Looks like there's also a county that cast a lot of votes  
+Find county with highest population
 
 ```r
-election[which.max(election$population_2014), ]
+election[which.max(election$population_2014), 
+         c("fips_county_code", "state", "population_2014")]
 ```
 
 ```
-## # A tibble: 1 × 16
-##   fips_county_code      state state_abbr    party      candidate  votes
-##              <dbl>     <fctr>     <fctr>   <fctr>         <fctr>  <dbl>
-## 1             6037 California         CA Democrat Bernie Sanders 434656
-## # ... with 10 more variables: fraction_votes <dbl>,
-## #   state_abbreviation <fctr>, population_2014 <dbl>, female <dbl>,
-## #   white <dbl>, black <dbl>, hispanic <dbl>, college <dbl>,
-## #   inc_percap <dbl>, inc_household <dbl>
+## # A tibble: 1 × 3
+##   fips_county_code      state population_2014
+##              <dbl>     <fctr>           <dbl>
+## 1             6037 California        10116705
 ```
 So the outlier is FIPS code 6037 (LA county).  
 According to Google, they are the county with the highest population in the US (9,818,605).
-Second is Cook County, IL at 5,194,675 (woot!)  
+Second is Cook County, IL at 5,194,675 (woot)  
 
 <br>
 
@@ -1257,9 +1232,11 @@ Take a look at other counties with high populations
 ```r
 find.outliers <- election %>%
   dplyr::select (
-    unique(fips_county_code), population_2014, votes
+    fips_county_code, population_2014,
+    state
   ) %>%
-  ungroup %>%
+  nest() %>% 
+  select(-data) %>%  # take out column with nested data
   arrange(desc(
     population_2014
   )) %>%
@@ -1267,20 +1244,20 @@ find.outliers <- election %>%
 ```
 
 ```
-## # A tibble: 8,307 × 3
-##    fips_county_code population_2014  votes
-##               <dbl>           <dbl>  <dbl>
-## 1              6037        10116705 434656
-## 2              6037        10116705 590502
-## 3              6037        10116705 179130
-## 4             48201         4441370  63246
-## 5             48201         4441370 156729
-## 6             48201         4441370  79793
-## 7              4013         4087191  86942
-## 8              4013         4087191 126988
-## 9              4013         4087191 144522
-## 10             6073         3263431 111898
-## # ... with 8,297 more rows
+## # A tibble: 2,798 × 3
+##    fips_county_code population_2014      state
+##               <dbl>           <dbl>     <fctr>
+## 1              6037        10116705 California
+## 2             48201         4441370      Texas
+## 3              4013         4087191    Arizona
+## 4              6073         3263431 California
+## 5              6059         3145515 California
+## 6             12086         2662874    Florida
+## 7             36047         2621793   New York
+## 8             48113         2518638      Texas
+## 9              6065         2329271 California
+## 10            36081         2321580   New York
+## # ... with 2,788 more rows
 ```
 
 
@@ -1365,13 +1342,16 @@ kable(election.by.state.spread, format = "markdown")
 |WV                 |         123860|       156245|           86354|
 |WY                 |            156|           NA|             124|
 
-percap, w.b_gap, tot.votes by state
+Graph per capita income, the white-black gap, and total votes by state
 for all three candidates
 
 ```r
 by.state.plot <- ggplot(election.by.state, aes(percap, w.b_gap))
 by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
-  facet_grid(. ~ candidate)
+  facet_grid(. ~ candidate) +
+  xlab("Per capita income") +
+  ylab("White-black gap per county") +
+  labs(size="Total Votes", colour = "Candidate")
 ```
 
 ![](year_of_the_donald_files/figure-html/by_state_plot-1.png)<!-- -->

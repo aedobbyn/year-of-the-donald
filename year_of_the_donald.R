@@ -197,7 +197,7 @@ dems.spread
 
 
 # -----------------------------------------
-# get fraction of votes per candidate per state weighted by state population
+# get avg and total  votes per candidate per state
 # limit to general election candidates
 general.by.state <- election %>%
   filter (
@@ -608,7 +608,8 @@ white.plot + geom_point(aes(colour = candidate, size=population_2014)) +
   # geom_jitter(position = position_jitter()) +    # figure out how to make this not look like it got the bubonic plague
   labs(title = "Primary Votes of Whites") +
   xlab("Percent of county that is white") +
-  ylab("Fraction of votes received")
+  ylab("Fraction of votes received") +
+  labs(colour = "Candidate", size = "Population in 2014")
 # so at low percent white (left half of graph), Hillary does best and Bernie does worst
 # at high percent white it's more of a jumble
 
@@ -618,15 +619,16 @@ college.plot + geom_point(aes(colour = candidate, size=fraction_votes)) +
   # geom_jitter() +
   labs(title = "Primary Votes of College Educated") +
   xlab("Percent with college degrees") +
-  ylab("Number of votes") 
-# labs(fill = "Candidate")
+  ylab("Number of votes") +
+  labs(colour = "Candidate", size = "Fraction of votes")
 
 
 # what's up with outlier county with very high population?
 # looks like there's also a county that cast a lot of votes
 qplot(population_2014, votes, data = election)
 
-election[which.max(election$population_2014), ]
+election[which.max(election$population_2014), 
+         c("fips_county_code", "state", "population_2014")]
 # so outlier is fips code 6037 (LA county) according to Google
 # they are the county with the highest population in the US (9,818,605)
 # second is Cook County, IL at 5,194,675!
@@ -634,9 +636,11 @@ election[which.max(election$population_2014), ]
 # take a look at other counties with high populations
 find.outliers <- election %>%
   dplyr::select (
-    unique(fips_county_code), population_2014, votes
+    fips_county_code, population_2014,
+    state
   ) %>%
-  ungroup %>%
+  nest() %>%  # squish three rows (for the three candidates) with same data into one
+  select(-data) %>%  # take out column with nested data
   arrange(desc(
     population_2014
   )) %>%
@@ -678,7 +682,10 @@ election.by.state.spread
 # all three candidates
 by.state.plot <- ggplot(election.by.state, aes(percap, w.b_gap))
 by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
-  facet_grid(. ~ candidate)
+  facet_grid(. ~ candidate) +
+  xlab("Per capita income") +
+  ylab("White-black gap per county") +
+  labs(size="Total Votes", colour = "Candidate")
 
 
 

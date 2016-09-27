@@ -203,7 +203,7 @@ e.window <- election %>%
 #### Democrats
 First, only look at Bernie and Hillary  
 
-Get *average votes* per county per state (i.e., collapse across county)  
+Get **average votes** per county per state (i.e., collapse across county)  
 ```{r dems}
 dems <- election %>%
   na.omit() %>%
@@ -250,7 +250,7 @@ general.by.state <- election %>%
   ) 
 ```
 
-Spread *total votes* per candidate per state
+Spread **total votes** per candidate per state
 ```{r general_by_state_spread}
 general.by.state.spread <- general.by.state %>%
   select(

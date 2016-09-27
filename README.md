@@ -1,5 +1,6 @@
 # Year of the Donald
-Mock 2016 general election analysis using 2016 primary data joined with demographic data about each county. A couple machine learning algorithms predict which candidate wins each county.
+Mock 2016 general election analysis using 2016 primary data joined with demographic data about each county. A couple machine learning algorithms predict which candidate wins each county.  
+Report in `year_of_the_donald.md`.
 
 ## Workflow
 * Import data from local SQL database
@@ -9,4 +10,5 @@ Mock 2016 general election analysis using 2016 primary data joined with demograp
 
 ## Files
 * [Primary data](https://www.kaggle.com/benhamner/2016-us-election) from Kaggle in `primary_results.csv`, county data in `county_facts_abr.csv`  
+* Compiled markdown in `year_of_the_donald.md`
 * Script with all the code is `year_of_the_donald.R`

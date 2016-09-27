@@ -251,7 +251,7 @@ names(general.by.state.spread)[names(general.by.state.spread)=='Hillary Clinton'
 # see how much Clinton is winning by in total votes cast per state
 clinton.lead <- general.by.state.spread %>%
   mutate(
-    hil.lead = Clinton - Trump
+    clinton.lead = Clinton - Trump
   ) 
 clinton.lead
 
@@ -261,10 +261,10 @@ clinton.lead
 all.or.nothing <- clinton.lead %>%
   na.omit() %>%          # take out rows that contain NAs
   mutate (
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    winner = ifelse(clinton.lead > 0, 'Clinton', 'Trump'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
-  )
+  ) 
 all.or.nothing
 
 # how many states did each win?
@@ -325,15 +325,15 @@ combo.spread <- combo.spread %>%
   )
 
 # check out Trump and Clinton columns
-combo.spread[, -3]
+combo.spread[, c(1:2, 10:11)]
 
 
-# add hil.lead all or nothing and winner columns
+# add clinton.lead all or nothing and winner columns
 winner.winner <- combo.spread %>%
   na.omit() %>%                         # take out all NAs
   mutate(
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    clinton.lead = Clinton - Trump,
+    winner = ifelse(clinton.lead > 0, 'Clinton', 'Trump'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
   ) 
@@ -402,19 +402,22 @@ combo.by.state.spread <- combo.by.state.spread %>%
 combo.by.state.spread <- combo.by.state.spread %>% 
   na.omit() %>%                         # take out all NAs
   mutate (
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
-    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
-    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
-  ) 
+    `Clinton's lead` = Clinton - Trump,
+    Winner = ifelse(`Clinton's lead` > 0, 'Clinton', 'Trump'),
+    `All or nothing: Trump` = ifelse(Trump > Clinton, Trump, 0),
+    `All or nothing: Clinton` = ifelse(Clinton > Trump, Clinton, 0)
+  )  
 
 
 # make the winner column a factor
-combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
+combo.by.state.spread$Winner <- factor(combo.by.state.spread$Winner)
 
+# move winner info to the left of the tibble
+combo.by.state.spread <- 
+  combo.by.state.spread[, c(1, 8:ncol(combo.by.state.spread), 2:7)]
 
 # see who got the chicken dinner for each county
-head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
+head(combo.by.state.spread[, c('state_abbreviation', 'Winner')])
 
 
 
@@ -595,10 +598,10 @@ library(ggplot2)
 
 # bar graphs for each state plotting whether Clinton won or lost
 # in fake head-to-head with Trump
-hil.lead.plot <- ggplot(clinton.lead) +
-  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') 
+clinton.lead.plot <- ggplot(clinton.lead) +
+  geom_bar(aes(x=state_abbreviation, y=clinton.lead), stat='identity') 
 # here there be labs
-hil.lead.plot
+clinton.lead.plot
 
 
 # for each county, 

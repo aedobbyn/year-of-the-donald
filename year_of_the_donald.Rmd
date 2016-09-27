@@ -279,7 +279,7 @@ Pretending that this is a head-to-head (and not totally different primaries), se
 ```{r clinton_lead, results="hide"}
 clinton.lead <- general.by.state.spread %>%
   mutate(
-    hil.lead = Clinton - Trump
+    clinton.lead = Clinton - Trump
   ) 
 clinton.lead
 ```
@@ -292,10 +292,10 @@ Give the loser a 0 in total votes
 all.or.nothing <- clinton.lead %>%
   na.omit() %>%          # take out rows that contain NAs
   mutate (
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    winner = ifelse(clinton.lead > 0, 'Clinton', 'Trump'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
-  )
+  ) 
 kable(all.or.nothing, format = "markdown")
 ```
 
@@ -320,7 +320,7 @@ kable(all.or.nothing.sums, format = "markdown")
 
 
 
-
+***
 
 # The meat of the analysis
 
@@ -356,7 +356,8 @@ combo.spread <- combo %>%
   ) 
 combo.spread
 ```
-Rename columns and take a look
+
+Rename columns
 ```{r, results="hide"}
 combo.spread <- combo.spread %>%
   rename(
@@ -367,7 +368,7 @@ combo.spread <- combo.spread %>%
 
 Check out Trump and Clinton columns
 ```{r}
-combo.spread[, -3]
+combo.spread[, c(1:2, 10:11)]
 ```
 
 
@@ -376,8 +377,8 @@ Add Hillary's lead, all or nothing, and winner columns
 winner.winner <- combo.spread %>%
   na.omit() %>%                         # take out all NAs
   mutate(
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    clinton.lead = Clinton - Trump,
+    winner = ifelse(clinton.lead > 0, 'Hil', 'Donald'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
   ) 
@@ -422,7 +423,7 @@ Spread by total votes (can also do by mean.votes)
 combo.by.state.spread <- combo.by.state %>%
   select (
     state_abbreviation, candidate,
-    tot.votes, # note that have to take out mean.votes or tot.votes so that don't get NAs in the Trump and Clinton columns
+    tot.votes, # note that you have to take out either mean.votes or tot.votes so that you don't get NAs in the Trump and Clinton columns
     pop, mean.female, mean.white, mean.black, mean.hisp, mean.inc
   ) %>%
   na.omit() %>%
@@ -452,22 +453,27 @@ Add winner stuff
 combo.by.state.spread <- combo.by.state.spread %>% 
   na.omit() %>%                         # take out all NAs
   mutate (
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
-    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
-    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
+    `Clinton's lead` = Clinton - Trump,
+    Winner = ifelse(`Clinton's lead` > 0, 'Clinton', 'Trump'),
+    `All or nothing: Trump` = ifelse(Trump > Clinton, Trump, 0),
+    `All or nothing: Clinton` = ifelse(Clinton > Trump, Clinton, 0)
   ) 
 ```
 
 Make the winner column a factor
-
 ```{r}
-combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
+combo.by.state.spread$Winner <- factor(combo.by.state.spread$Winner)
 ```
 
+Move winner info to the left of the tibble
+```{r}
+combo.by.state.spread <- combo.by.state.spread[, c(1, 8:ncol(combo.by.state.spread), 2:7)]
+```
+
+
 See who won each state
-```{r, results="hide"}
-head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
+```{r}
+kable(combo.by.state.spread, format="markdown")
 ```
 
 
@@ -698,12 +704,12 @@ library(ggplot2)
 
 Bar graphs for each state plotting whether Clinton won or lost in a fake head-to-head with Trump
 ```{r hil_lead_plot, warning=FALSE, fig.width=10}
-hil.lead.plot <- ggplot(clinton.lead) +
-  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') +
+clinton.lead.plot <- ggplot(clinton.lead) +
+  geom_bar(aes(x=state_abbreviation, y=clinton.lead), stat='identity') +
   xlab("State") +
   ylab("Clinton's Lead")
 
-hil.lead.plot
+clinton.lead.plot
 ```
 
 ### Integrate demographic variables
@@ -806,6 +812,14 @@ by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
   xlab("Per capita income") +
   ylab("White-black gap per county") +
   labs(size="Total Votes", colour = "Candidate")
+
+```
+
+
+
+***
+```{r session_info}
+sessionInfo()
 
 ```
 

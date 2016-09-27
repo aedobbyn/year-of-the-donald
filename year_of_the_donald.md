@@ -250,7 +250,7 @@ e.window <- election %>%
 #### Democrats
 First, only look at Bernie and Hillary  
 
-Get *average votes* per county per state (i.e., collapse across county)  
+Get **average votes** per county per state (i.e., collapse across county)  
 
 ```r
 dems <- election %>%
@@ -345,7 +345,7 @@ general.by.state <- election %>%
   ) 
 ```
 
-Spread *total votes* per candidate per state
+Spread **total votes** per candidate per state
 
 ```r
 general.by.state.spread <- general.by.state %>%
@@ -423,7 +423,7 @@ Pretending that this is a head-to-head (and not totally different primaries), se
 ```r
 clinton.lead <- general.by.state.spread %>%
   mutate(
-    hil.lead = Clinton - Trump
+    clinton.lead = Clinton - Trump
   ) 
 clinton.lead
 ```
@@ -437,55 +437,55 @@ Give the loser a 0 in total votes
 all.or.nothing <- clinton.lead %>%
   na.omit() %>%          # take out rows that contain NAs
   mutate (
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    winner = ifelse(clinton.lead > 0, 'Clinton', 'Trump'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
-  )
+  ) 
 kable(all.or.nothing, format = "markdown")
 ```
 
 
 
-|state_abbreviation |   Trump| Clinton| hil.lead|winner | all.nothing.donald| all.nothing.hillary|
-|:------------------|-------:|-------:|--------:|:------|------------------:|-------------------:|
-|AL                 |  371735|  309928|   -61807|Donald |             371735|                   0|
-|AR                 |  133144|  144580|    11436|Hil    |                  0|              144580|
-|AZ                 |  249916|  235697|   -14219|Donald |             249916|                   0|
-|CA                 | 1174829| 1940580|   765751|Hil    |                  0|             1940580|
-|DE                 |   42472|   55950|    13478|Hil    |                  0|               55950|
-|FL                 | 1077221| 1097400|    20179|Hil    |                  0|             1097400|
-|GA                 |  501707|  543008|    41301|Hil    |                  0|              543008|
-|HI                 |    5677|   10127|     4450|Hil    |                  0|               10127|
-|IA                 |   45419|   69733|    24314|Hil    |                  0|               69733|
-|ID                 |   62478|    5065|   -57413|Donald |              62478|                   0|
-|IL                 |  427086|  396004|   -31082|Donald |             427086|                   0|
-|IN                 |  590460|  303382|  -287078|Donald |             590460|                   0|
-|KY                 |   82493|  212550|   130057|Hil    |                  0|              212550|
-|LA                 |  124818|  221615|    96797|Hil    |                  0|              221615|
-|MD                 |  236623|  533247|   296624|Hil    |                  0|              533247|
-|MI                 |  483751|  576795|    93044|Hil    |                  0|              576795|
-|MO                 |  382093|  310602|   -71491|Donald |             382093|                   0|
-|MS                 |  191755|  182447|    -9308|Donald |             191755|                   0|
-|MT                 |  114056|   55194|   -58862|Donald |             114056|                   0|
-|NC                 |  458151|  616383|   158232|Hil    |                  0|              616383|
-|NE                 |  121287|   14340|  -106947|Donald |             121287|                   0|
-|NJ                 |  356697|  554237|   197540|Hil    |                  0|              554237|
-|NM                 |   73530|  110451|    36921|Hil    |                  0|              110451|
-|NV                 |   34531|    6296|   -28235|Donald |              34531|                   0|
-|NY                 |  524932| 1054083|   529151|Hil    |                  0|             1054083|
-|OH                 |  727585|  679266|   -48319|Donald |             727585|                   0|
-|OK                 |  130141|  139338|     9197|Hil    |                  0|              139338|
-|OR                 |  240804|  251739|    10935|Hil    |                  0|              251739|
-|PA                 |  892702|  918689|    25987|Hil    |                  0|              918689|
-|SC                 |  239851|  271514|    31663|Hil    |                  0|              271514|
-|SD                 |   44866|   27046|   -17820|Donald |              44866|                   0|
-|TN                 |  332702|  245304|   -87398|Donald |             332702|                   0|
-|TX                 |  757618|  935080|   177462|Hil    |                  0|              935080|
-|UT                 |   24864|   15666|    -9198|Donald |              24864|                   0|
-|VA                 |  355960|  503358|   147398|Hil    |                  0|              503358|
-|WA                 |  403003|    7140|  -395863|Donald |             403003|                   0|
-|WI                 |  386370|  432767|    46397|Hil    |                  0|              432767|
-|WV                 |  156245|   86354|   -69891|Donald |             156245|                   0|
+|state_abbreviation |   Trump| Clinton| clinton.lead|winner  | all.nothing.donald| all.nothing.hillary|
+|:------------------|-------:|-------:|------------:|:-------|------------------:|-------------------:|
+|AL                 |  371735|  309928|       -61807|Trump   |             371735|                   0|
+|AR                 |  133144|  144580|        11436|Clinton |                  0|              144580|
+|AZ                 |  249916|  235697|       -14219|Trump   |             249916|                   0|
+|CA                 | 1174829| 1940580|       765751|Clinton |                  0|             1940580|
+|DE                 |   42472|   55950|        13478|Clinton |                  0|               55950|
+|FL                 | 1077221| 1097400|        20179|Clinton |                  0|             1097400|
+|GA                 |  501707|  543008|        41301|Clinton |                  0|              543008|
+|HI                 |    5677|   10127|         4450|Clinton |                  0|               10127|
+|IA                 |   45419|   69733|        24314|Clinton |                  0|               69733|
+|ID                 |   62478|    5065|       -57413|Trump   |              62478|                   0|
+|IL                 |  427086|  396004|       -31082|Trump   |             427086|                   0|
+|IN                 |  590460|  303382|      -287078|Trump   |             590460|                   0|
+|KY                 |   82493|  212550|       130057|Clinton |                  0|              212550|
+|LA                 |  124818|  221615|        96797|Clinton |                  0|              221615|
+|MD                 |  236623|  533247|       296624|Clinton |                  0|              533247|
+|MI                 |  483751|  576795|        93044|Clinton |                  0|              576795|
+|MO                 |  382093|  310602|       -71491|Trump   |             382093|                   0|
+|MS                 |  191755|  182447|        -9308|Trump   |             191755|                   0|
+|MT                 |  114056|   55194|       -58862|Trump   |             114056|                   0|
+|NC                 |  458151|  616383|       158232|Clinton |                  0|              616383|
+|NE                 |  121287|   14340|      -106947|Trump   |             121287|                   0|
+|NJ                 |  356697|  554237|       197540|Clinton |                  0|              554237|
+|NM                 |   73530|  110451|        36921|Clinton |                  0|              110451|
+|NV                 |   34531|    6296|       -28235|Trump   |              34531|                   0|
+|NY                 |  524932| 1054083|       529151|Clinton |                  0|             1054083|
+|OH                 |  727585|  679266|       -48319|Trump   |             727585|                   0|
+|OK                 |  130141|  139338|         9197|Clinton |                  0|              139338|
+|OR                 |  240804|  251739|        10935|Clinton |                  0|              251739|
+|PA                 |  892702|  918689|        25987|Clinton |                  0|              918689|
+|SC                 |  239851|  271514|        31663|Clinton |                  0|              271514|
+|SD                 |   44866|   27046|       -17820|Trump   |              44866|                   0|
+|TN                 |  332702|  245304|       -87398|Trump   |             332702|                   0|
+|TX                 |  757618|  935080|       177462|Clinton |                  0|              935080|
+|UT                 |   24864|   15666|        -9198|Trump   |              24864|                   0|
+|VA                 |  355960|  503358|       147398|Clinton |                  0|              503358|
+|WA                 |  403003|    7140|      -395863|Trump   |             403003|                   0|
+|WI                 |  386370|  432767|        46397|Clinton |                  0|              432767|
+|WV                 |  156245|   86354|       -69891|Trump   |             156245|                   0|
 
 How many states did each win?
 
@@ -494,7 +494,7 @@ length(which(all.or.nothing$winner=='Hil')) # 22
 ```
 
 ```
-## [1] 22
+## [1] 0
 ```
 
 ```r
@@ -502,7 +502,7 @@ length(which(all.or.nothing$winner=='Donald')) # 16
 ```
 
 ```
-## [1] 16
+## [1] 0
 ```
 
 How many overall votes did Clinton win by?
@@ -527,7 +527,7 @@ kable(all.or.nothing.sums, format = "markdown")
 
 
 
-
+***
 
 # The meat of the analysis
 
@@ -570,7 +570,8 @@ combo.spread <- combo %>%
   ) 
 combo.spread
 ```
-Rename columns and take a look
+
+Rename columns
 
 ```r
 combo.spread <- combo.spread %>%
@@ -583,25 +584,24 @@ combo.spread <- combo.spread %>%
 Check out Trump and Clinton columns
 
 ```r
-combo.spread[, -3]
+combo.spread[, c(1:2, 10:11)]
 ```
 
 ```
-## # A tibble: 2,798 × 10
-##    state_abbreviation fips_county_code female white black hispanic college
-##                <fctr>            <dbl>  <dbl> <dbl> <dbl>    <dbl>   <dbl>
-## 1                  AL             1001   51.4  77.9  18.7      2.7    20.9
-## 2                  AL             1003   51.2  87.1   9.6      4.6    27.7
-## 3                  AL             1005   46.6  50.2  47.6      4.5    13.4
-## 4                  AL             1007   45.9  76.3  22.1      2.1    12.1
-## 5                  AL             1009   50.5  96.0   1.8      8.7    12.1
-## 6                  AL             1011   45.3  26.9  70.1      7.5    12.5
-## 7                  AL             1013   53.6  53.9  44.0      1.2    14.0
-## 8                  AL             1015   51.8  75.8  21.1      3.5    16.1
-## 9                  AL             1017   52.3  58.3  39.5      2.0    11.8
-## 10                 AL             1019   50.2  93.0   4.6      1.5    12.8
-## # ... with 2,788 more rows, and 3 more variables: inc_percap <dbl>,
-## #   Trump <dbl>, Clinton <dbl>
+## # A tibble: 2,798 × 4
+##    state_abbreviation fips_county_code Trump Clinton
+##                <fctr>            <dbl> <dbl>   <dbl>
+## 1                  AL             1001  5387    2387
+## 2                  AL             1003 23618    5290
+## 3                  AL             1005  1710    2567
+## 4                  AL             1007  1959     942
+## 5                  AL             1009  7390     564
+## 6                  AL             1011   313    2451
+## 7                  AL             1013  1720    2196
+## 8                  AL             1015  8960    5011
+## 9                  AL             1017  2169    2899
+## 10                 AL             1019  2777     712
+## # ... with 2,788 more rows
 ```
 
 
@@ -611,8 +611,8 @@ Add Hillary's lead, all or nothing, and winner columns
 winner.winner <- combo.spread %>%
   na.omit() %>%                         # take out all NAs
   mutate(
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
+    clinton.lead = Clinton - Trump,
+    winner = ifelse(clinton.lead > 0, 'Hil', 'Donald'),
     all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
     all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
   ) 
@@ -674,7 +674,7 @@ Spread by total votes (can also do by mean.votes)
 combo.by.state.spread <- combo.by.state %>%
   select (
     state_abbreviation, candidate,
-    tot.votes, # note that have to take out mean.votes or tot.votes so that don't get NAs in the Trump and Clinton columns
+    tot.votes, # note that you have to take out either mean.votes or tot.votes so that you don't get NAs in the Trump and Clinton columns
     pop, mean.female, mean.white, mean.black, mean.hisp, mean.inc
   ) %>%
   na.omit() %>%
@@ -752,25 +752,74 @@ Add winner stuff
 combo.by.state.spread <- combo.by.state.spread %>% 
   na.omit() %>%                         # take out all NAs
   mutate (
-    hil.lead = Clinton - Trump,
-    winner = ifelse(hil.lead > 0, 'Hil', 'Donald'),
-    all.nothing.donald = ifelse(Trump > Clinton, Trump, 0),
-    all.nothing.hillary = ifelse(Clinton > Trump, Clinton, 0)
+    `Clinton's lead` = Clinton - Trump,
+    Winner = ifelse(`Clinton's lead` > 0, 'Clinton', 'Trump'),
+    `All or nothing: Trump` = ifelse(Trump > Clinton, Trump, 0),
+    `All or nothing: Clinton` = ifelse(Clinton > Trump, Clinton, 0)
   ) 
 ```
 
 Make the winner column a factor
 
+```r
+combo.by.state.spread$Winner <- factor(combo.by.state.spread$Winner)
+```
+
+Move winner info to the left of the tibble
 
 ```r
-combo.by.state.spread$winner <- factor(combo.by.state.spread$winner)
+combo.by.state.spread <- combo.by.state.spread[, c(1, 8:ncol(combo.by.state.spread), 2:7)]
 ```
+
 
 See who won each state
 
 ```r
-head(combo.by.state.spread[, c('state_abbreviation', 'winner')])
+kable(combo.by.state.spread, format="markdown")
 ```
+
+
+
+|state_abbreviation |   Trump| Clinton| Clinton's lead|Winner  | All or nothing: Trump| All or nothing: Clinton|      pop| mean.female| mean.white| mean.black| mean.hisp| mean.inc|
+|:------------------|-------:|-------:|--------------:|:-------|---------------------:|-----------------------:|--------:|-----------:|----------:|----------:|---------:|--------:|
+|CA                 | 1174829| 1940580|         765751|Clinton |                     0|                 1940580| 38802500|    49.51724|   81.59483|  3.5655172| 29.846552| 27255.28|
+|TX                 |  757618|  935080|         177462|Clinton |                     0|                  935080| 26956958|    49.19528|   89.24449|  6.8220472| 33.931102| 22813.81|
+|FL                 | 1077221| 1097400|          20179|Clinton |                     0|                 1097400| 19893297|    48.60000|   80.61045| 15.0029851| 13.461194| 22904.43|
+|NY                 |  524932| 1054083|         529151|Clinton |                     0|                 1054083| 19746227|    50.21935|   87.42581|  6.9822581|  7.525806| 27608.37|
+|PA                 |  892702|  918689|          25987|Clinton |                     0|                  918689| 12787209|    50.02836|   91.98806|  4.8567164|  4.032836| 25173.30|
+|OH                 |  727585|  679266|         -48319|Trump   |                727585|                       0| 11594163|    50.37841|   92.69773|  4.3306818|  2.552273| 23542.81|
+|GA                 |  501707|  543008|          41301|Clinton |                     0|                  543008| 10097343|    50.30755|   68.19308| 28.3641509|  6.289937| 20093.77|
+|NC                 |  458151|  616383|         158232|Clinton |                     0|                  616383|  9943964|    50.82000|   74.15100| 20.8010000|  7.017000| 22042.28|
+|MI                 |  483751|  576795|          93044|Clinton |                     0|                  576795|  9909877|    49.66747|   91.18434|  4.0506024|  3.387952| 22830.25|
+|NJ                 |  356697|  554237|         197540|Clinton |                     0|                  554237|  8938175|    51.06190|   76.97143| 13.1857143| 16.666667| 35503.71|
+|VA                 |  355960|  503358|         147398|Clinton |                     0|                  503358|  8326289|    50.62857|   76.23459| 18.9834586|  5.112030| 26457.60|
+|IL                 |  427086|  396004|         -31082|Trump   |                427086|                       0|  7634124|    49.91188|   91.92475|  5.1089109|  4.625743| 24727.96|
+|WA                 |  403003|    7140|        -395863|Trump   |                403003|                       0|  7061530|    49.84615|   88.86667|  1.6153846| 13.810256| 25290.15|
+|AZ                 |  249916|  235697|         -14219|Trump   |                249916|                       0|  6731484|    49.63333|   78.98667|  2.3333333| 30.620000| 20863.93|
+|IN                 |  590460|  303382|        -287078|Trump   |                590460|                       0|  6596855|    50.19674|   94.41522|  2.8489130|  3.831522| 23351.16|
+|TN                 |  332702|  245304|         -87398|Trump   |                332702|                       0|  6549352|    50.45789|   89.75158|  7.5021053|  3.350526| 20801.06|
+|MO                 |  382093|  310602|         -71491|Trump   |                382093|                       0|  6063589|    50.10870|   93.08435|  3.7130435|  2.750435| 20960.84|
+|MD                 |  236623|  533247|         296624|Clinton |                     0|                  533247|  5976407|    50.87917|   73.13750| 20.5833333|  5.683333| 32732.46|
+|WI                 |  386370|  432767|          46397|Clinton |                     0|                  432767|  5757564|    49.64167|   92.55417|  1.7111111|  3.550000| 25372.03|
+|AL                 |  371735|  309928|         -61807|Trump   |                371735|                       0|  4849377|    51.26269|   68.26418| 28.6552239|  3.540299| 20481.43|
+|SC                 |  239851|  271514|          31663|Clinton |                     0|                  271514|  4832482|    50.93261|   60.74565| 36.1043478|  4.463044| 20910.52|
+|LA                 |  124818|  221615|          96797|Clinton |                     0|                  221615|  4649676|    49.94531|   64.62812| 32.0828125|  3.379688| 21658.66|
+|KY                 |   82493|  212550|         130057|Clinton |                     0|                  212550|  4413457|    50.25250|   93.86917|  3.8566667|  2.330000| 20179.03|
+|OR                 |  240804|  251739|          10935|Clinton |                     0|                  251739|  3970239|    50.04167|   91.48889|  0.8916667| 11.569444| 23853.67|
+|OK                 |  130141|  139338|           9197|Clinton |                     0|                  139338|  3878051|    49.84416|   78.40519|  3.7792208|  8.603896| 21907.58|
+|IA                 |   45419|   69733|          24314|Clinton |                     0|                   69733|  3107126|    50.15152|   95.68889|  1.4262626|  4.444444| 25615.56|
+|MS                 |  191755|  182447|          -9308|Trump   |                191755|                       0|  2994079|    51.01220|   56.48537| 41.2085366|  2.426829| 18341.73|
+|AR                 |  133144|  144580|          11436|Clinton |                     0|                  144580|  2966369|    50.54133|   80.40667| 16.1333333|  5.113333| 19443.19|
+|UT                 |   24864|   15666|          -9198|Trump   |                 24864|                       0|  2942902|    49.11724|   92.87586|  0.6551724|  8.886207| 22237.24|
+|NV                 |   34531|    6296|         -28235|Trump   |                 34531|                       0|  2839099|    47.41176|   87.34118|  2.8764706| 17.882353| 25841.82|
+|NM                 |   73530|  110451|          36921|Clinton |                     0|                  110451|  2085572|    49.37273|   86.02424|  1.8272727| 47.018182| 21684.76|
+|NE                 |  121287|   14340|        -106947|Trump   |                121287|                       0|  1881503|    49.81613|   95.42688|  0.9268817|  6.332258| 24756.12|
+|WV                 |  156245|   86354|         -69891|Trump   |                156245|                       0|  1850326|    50.11455|   95.56727|  2.3781818|  1.250909| 21043.82|
+|ID                 |   62478|    5065|         -57413|Trump   |                 62478|                       0|  1634464|    49.26136|   94.35455|  0.5795455| 12.597727| 20982.14|
+|HI                 |    5677|   10127|           4450|Clinton |                     0|                   10127|  1419472|    49.70000|   31.75000|  1.4000000| 10.900000| 27792.75|
+|MT                 |  114056|   55194|         -58862|Trump   |                114056|                       0|  1023579|    49.16250|   88.80714|  0.4071429|  2.676786| 24169.70|
+|DE                 |   42472|   55950|          13478|Clinton |                     0|                   55950|   935614|    51.63333|   72.63333| 20.9666667|  8.533333| 28055.00|
+|SD                 |   44866|   27046|         -17820|Trump   |                 44866|                       0|   853175|    49.47879|   82.51212|  0.7803030|  2.810606| 24056.05|
 
 
 
@@ -1160,12 +1209,12 @@ library(ggplot2)
 Bar graphs for each state plotting whether Clinton won or lost in a fake head-to-head with Trump
 
 ```r
-hil.lead.plot <- ggplot(clinton.lead) +
-  geom_bar(aes(x=state_abbreviation, y=hil.lead), stat='identity') +
+clinton.lead.plot <- ggplot(clinton.lead) +
+  geom_bar(aes(x=state_abbreviation, y=clinton.lead), stat='identity') +
   xlab("State") +
   ylab("Clinton's Lead")
 
-hil.lead.plot
+clinton.lead.plot
 ```
 
 ![](year_of_the_donald_files/figure-html/hil_lead_plot-1.png)<!-- -->
@@ -1355,6 +1404,44 @@ by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +
 ```
 
 ![](year_of_the_donald_files/figure-html/by_state_plot-1.png)<!-- -->
+
+
+
+***
+
+```r
+sessionInfo()
+```
+
+```
+## R version 3.3.1 (2016-06-21)
+## Platform: x86_64-apple-darwin13.4.0 (64-bit)
+## Running under: OS X 10.11.6 (El Capitan)
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] ggplot2_2.1.0       gmodels_2.16.2      class_7.3-14       
+##  [4] randomForest_4.6-12 broom_0.4.1         lme4_1.1-12        
+##  [7] Matrix_1.2-6        dplyr_0.5.0         tidyr_0.6.0        
+## [10] tibble_1.2          RPostgreSQL_0.4-1   DBI_0.5-1          
+## [13] knitr_1.14         
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_0.12.7      formatR_1.4      nloptr_1.0.4     highr_0.6       
+##  [5] plyr_1.8.4       tools_3.3.1      digest_0.6.10    evaluate_0.9    
+##  [9] nlme_3.1-128     gtable_0.2.0     lattice_0.20-33  psych_1.6.6     
+## [13] yaml_2.1.13      parallel_3.3.1   stringr_1.1.0    gtools_3.5.0    
+## [17] grid_3.3.1       R6_2.1.3         rmarkdown_1.0    gdata_2.17.0    
+## [21] minqa_1.2.4      reshape2_1.4.1   magrittr_1.5     scales_0.4.0    
+## [25] htmltools_0.3.5  MASS_7.3-45      splines_3.3.1    assertthat_0.1  
+## [29] mnormt_1.5-4     colorspace_1.2-6 labeling_0.3     stringi_1.1.1   
+## [33] munsell_0.4.3    lazyeval_0.2.0
+```
 
 
 

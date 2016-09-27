@@ -1,7 +1,6 @@
 ---
 title: "Primary Analysis, Abridged"
 author: "Amanda Dobbyn"
-date: "`r format(Sys.Date())`"
 output: 
   html_document:
     keep_md: true

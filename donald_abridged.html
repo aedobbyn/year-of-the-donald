@@ -1600,6 +1600,35 @@ kable(mixed.mod, format=&quot;markdown&quot;)</code></pre>
 </div>
 <div id="random-forest" class="section level4">
 <h4>Random Forest</h4>
+<p>Classify the winner of each county (Trump or Clinton) from county demographic variables</p>
+<ul>
+<li>DV = winner</li>
+<li>IVs = population, percent female, percent black, percent hispanic, percent college educated, per capita income</li>
+<li>6 IVs so set <code>mtry</code> to sqrt(6) or 2 Print the confusion matrix</li>
+</ul>
+<pre class="r"><code>win.rf &lt;- randomForest(winner ~ population_2014 + female + black +
+                         hispanic + college + inc_percap,
+                       data = winner.winner,
+                       mtry = 2,    # number variables randomly sampled at each split
+                       replace = TRUE,
+                       proximitiy = TRUE, # get matrix of proximity measures
+                       importance = TRUE) # we want to know how important each variable is
+
+print(win.rf)</code></pre>
+<pre><code>## 
+## Call:
+##  randomForest(formula = winner ~ population_2014 + female + black +      hispanic + college + inc_percap, data = winner.winner, mtry = 2,      replace = TRUE, proximitiy = TRUE, importance = TRUE) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 2
+## 
+##         OOB estimate of  error rate: 18.44%
+## Confusion matrix:
+##         Clinton Trump class.error
+## Clinton     401   384  0.48917197
+## Trump       116  1810  0.06022845</code></pre>
+<p>The algorithm classifies Trump better than Clinton, maybe because he won more overall counties (more data –&gt; better prediction).</p>
+<p><br></p>
 <p>How important are each of the demographic variables?</p>
 <pre class="r"><code>round(importance(win.rf), 2)</code></pre>
 <pre><code>##                 Clinton Trump MeanDecreaseAccuracy MeanDecreaseGini
@@ -1614,7 +1643,25 @@ kable(mixed.mod, format=&quot;markdown&quot;)</code></pre>
 </div>
 <div id="k-nearest-neighbors" class="section level4">
 <h4>K Nearest Neighbors</h4>
-<p>See how well the model did</p>
+<ul>
+<li>Make a new dataframe with only the columns we want to keep</li>
+<li>Normalize the predictor variables</li>
+<li>Assign rows to training or test at random (i.e., make it so not just first ~1000 are training and last ~2000 are test)</li>
+<li>Make a vector the same length as our dataset with a random 1 or 2 assigned to each position based on the split we want</li>
+<li>1 = training, 2 = test. Train with 1/3 of data, test with 2/3</li>
+<li>Split dataset into training and test, and take out the target varialbe</li>
+<li>Store the target variable (winner) in a vector that we can use to compare how well the model predicted the actual outcomes</li>
+</ul>
+<p><em>So our model uses the data frame <code>nov.train</code> and the actual answers in the vector <code>nov.train.labels</code> to classify the data frame <code>nov.test</code> into a new vector of predictions, <code>nov.pred</code>.</em></p>
+<p><br></p>
+<p>Here’s the model and some of the precited vector.</p>
+<pre class="r"><code>nov.pred &lt;- knn(train=nov.train, test=nov.test, cl=nov.train.labels, k=3, prob=T)
+
+nov.pred[1:10]</code></pre>
+<pre><code>##  [1] Trump   Trump   Trump   Trump   Trump   Trump   Trump   Trump  
+##  [9] Clinton Trump  
+## Levels: Clinton Trump</code></pre>
+<p>See how well the model did by comparing the real answers in <code>nov.test.labels</code> to our model’s precitions in <code>nov.pred</code>.</p>
 <pre class="r"><code>library(gmodels)
 CrossTable(nov.test.labels, nov.pred, prop.chisq = F)</code></pre>
 <pre><code>## 
@@ -1649,7 +1696,7 @@ CrossTable(nov.test.labels, nov.pred, prop.chisq = F)</code></pre>
 ## ----------------|-----------|-----------|-----------|
 ## 
 ## </code></pre>
-<p>The algorithm classifies Trump better than Clinton, maybe because he won more overall counties(more data -&gt; better prediction)</p>
+<p>Again, the model is better at classifying which counties Trump won based on these demographic variables than the counties that Clinton won.</p>
 <hr />
 <p><br><br></p>
 </div>

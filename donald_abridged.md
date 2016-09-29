@@ -352,6 +352,45 @@ Percent black is an important factor with counties with higher black populations
 #### Random Forest
 
 
+
+
+Classify the winner of each county (Trump or Clinton) from county demographic variables  
+
+* DV = winner
+* IVs = population, percent female, percent black, percent hispanic, percent college educated, per capita income
+* 6 IVs so set `mtry` to sqrt(6) or 2
+Print the confusion matrix
+
+```r
+win.rf <- randomForest(winner ~ population_2014 + female + black +
+                         hispanic + college + inc_percap,
+                       data = winner.winner,
+                       mtry = 2,    # number variables randomly sampled at each split
+                       replace = TRUE,
+                       proximitiy = TRUE, # get matrix of proximity measures
+                       importance = TRUE) # we want to know how important each variable is
+
+print(win.rf)
+```
+
+```
+## 
+## Call:
+##  randomForest(formula = winner ~ population_2014 + female + black +      hispanic + college + inc_percap, data = winner.winner, mtry = 2,      replace = TRUE, proximitiy = TRUE, importance = TRUE) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 2
+## 
+##         OOB estimate of  error rate: 18.44%
+## Confusion matrix:
+##         Clinton Trump class.error
+## Clinton     401   384  0.48917197
+## Trump       116  1810  0.06022845
+```
+The algorithm classifies Trump better than Clinton, maybe because he won more overall counties (more data --> better prediction).  
+
+<br>
+
 How important are each of the demographic variables?
 
 ```r
@@ -375,8 +414,35 @@ Percent black seems to be particularly important
 
 #### K Nearest Neighbors
 
+* Make a new dataframe with only the columns we want to keep
+* Normalize the predictor variables
+* Assign rows to training or test at random (i.e., make it so not just first ~1000 are training and last ~2000 are test)
+* Make a vector the same length as our dataset with a random 1 or 2 assigned to each position based on the split we want
+  * 1 = training, 2 = test. Train with 1/3 of data, test with 2/3
+* Split dataset into training and test, and take out the target varialbe
+* Store the target variable (winner) in a vector that we can use to compare how well the model predicted the actual outcomes
 
-See how well the model did
+
+
+*So our model uses the data frame `nov.train` and the actual answers in the vector `nov.train.labels` to classify the data frame `nov.test` into a new vector of predictions, `nov.pred`.*  
+
+<br>
+
+Here's the model and some of the precited vector.
+
+```r
+nov.pred <- knn(train=nov.train, test=nov.test, cl=nov.train.labels, k=3, prob=T)
+
+nov.pred[1:10]
+```
+
+```
+##  [1] Trump   Trump   Trump   Trump   Trump   Trump   Trump   Trump  
+##  [9] Clinton Trump  
+## Levels: Clinton Trump
+```
+
+See how well the model did by comparing the real answers in `nov.test.labels` to our model's precitions in `nov.pred`.
 
 ```r
 library(gmodels)
@@ -417,8 +483,7 @@ CrossTable(nov.test.labels, nov.pred, prop.chisq = F)
 ## 
 ## 
 ```
-The algorithm classifies Trump better than Clinton, maybe because he won more overall counties(more data -> better prediction)
-
+Again, the model is better at classifying which counties Trump won based on these demographic variables than the counties that Clinton won.
 
 ***
 

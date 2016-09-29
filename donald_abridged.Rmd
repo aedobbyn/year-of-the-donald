@@ -539,17 +539,21 @@ white.plot + geom_point(aes(colour = candidate, size=population_2014)) +
   labs(colour = "Candidate", size = "Population in 2014")
   
 ```
-So at low percent white (left half of graph), Hillary does best and Bernie does worst at high percent white it's more of a jumble  
+So at low percent white (left half of graph), Hillary does best and Bernie does worst. At high percent white it's more of a jumble.  
 
-Size of point as fraction of vote
+<br><br>
+
+Now plot how well each candidate does with college educated voters.
 ```{r college_plot}
 college.plot <- ggplot(election, aes(college, votes))
 college.plot + geom_point(aes(colour = candidate, size=fraction_votes)) +
   labs(title = "Primary Votes of College Educated") +
-  xlab("Percent with college degrees") +
+  xlab("Percent of voters with college degrees per county") +
   ylab("Number of votes") +
   labs(colour = "Candidate", size = "Fraction of votes")
 ```
+
+#### Quick digression
 
 What's up with outlier county with very high population?  
 Plot population per county against votes cast per county
@@ -586,8 +590,13 @@ find.outliers <- election %>%
 ```
 
 
+#### Back to demographics as predictors
+Can we detect any difference in how candidates do based on racial makeup and income in each county?
+
+<br>
+
 Graph per capita income, the white-black gap, and total votes by state
-for all three candidates
+for all three candidates.
 ``` {r by_state_plot}
 by.state.plot <- ggplot(election.by.state, aes(percap, w.b_gap))
 by.state.plot + geom_point(aes(colour = candidate, size=tot.votes)) +

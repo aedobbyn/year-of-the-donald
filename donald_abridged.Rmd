@@ -315,33 +315,47 @@ library(lme4)
 library(broom)
 ```
 
-First a linear regression with only fixed effects.  
-Percent female, percent college, and per capita income
+First a binomial linear regression with only one fixed effect.  
+Per capita income predicting whether the winner of that county is Trump or Clinton.  
+
+```{r inc_reg}
+inc_reg <- glm(winner ~ inc_percap,
+                data=winner.winner, family=binomial())
+tidy(inc_reg)
+```
+So there's no significant effect of income on the winner of the county (p > 0.05).  
+<br><br>
+
+Now a binomial linear regression with two fixed effects.
+The percent of the county that is female and percent with college degrees
 predicting whether the winner of that county is Trump or Clinton.  
 
-<br>
 
-Clinton coded as 1, Trump as 0.
+Clinton is dummy coded as 0, Trump as 1.  
+
+* So, a positive beta for a given variable means that an increase in that variable means that that county is more likely to go to Trump. A negative beta means that an increase in that variable is better for Clinton.  
 ```{r simple_reg}
-simp_reg <- glm(winner ~ female + college + inc_percap,
+simp_reg <- glm(winner ~ female + college,
                 data=winner.winner, family=binomial())
-kable(tidy(simp_reg), format="markdown")
+tidy(simp_reg)
 ```
-This model suggests that women and college-educated people prefer Clinton, whereas Trump does better in wealthier counties.
+This model suggests that women and college-educated people prefer Clinton.
 
 <br>
 
 Now a mixed model with percent female, percent college, and percent black
 predicting winner.
-Random intercept for state.
+We include a random intercept for state.  
+
+* This corrects for effects on the vote that are specific to a given state so that we can generalize this effect to the country
 ```{r mixed_mod}
 mixed.mod <- winner.winner %>% 
   do(tidy(glmer(winner ~ female + college + black +
                   (1 | state_abbreviation),
                 data=., family=binomial())))
-kable(mixed.mod, format="markdown")
+mixed.mod
 ```
-Percent black is an important factor with counties with higher black populations more likely to support Clinton.
+An increase in all three variables is good for Clinton. Percent black is an important factor, with the highest effect size of the three.
 
 <br><br>
 
@@ -380,8 +394,7 @@ How important are each of the demographic variables?
 ```{r rf_importance}
 round(importance(win.rf), 2)
 ```
-Percent black seems to be particularly important  
-
+Percent black seems to be particularly important.
 
 <br><br>
 
@@ -484,6 +497,7 @@ library(gmodels)
 CrossTable(nov.test.labels, nov.pred, prop.chisq = F)
 ```
 Again, the model is better at classifying which counties Trump won based on these demographic variables than the counties that Clinton won.
+
 
 ***
 

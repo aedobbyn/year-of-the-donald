@@ -11,5 +11,5 @@ Full report in `year_of_the_donald.md`; abridged report in `donald_abridged.md` 
 ## Files
 * [Primary data](https://www.kaggle.com/benhamner/2016-us-election) from Kaggle in `primary_results.csv`, county data in `county_facts_abr.csv`  
 * Compiled markdown in `year_of_the_donald.md`
-* Shortened version (read: less code shown) in `donald_abridged.md`
-* Script with all the code is `year_of_the_donald.R`
+* Shortened version in `donald_abridged.md`
+* Straight up R script in `year_of_the_donald.R`

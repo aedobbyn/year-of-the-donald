@@ -298,54 +298,78 @@ kable(election.by.state.spread, format = "markdown",
 #### Regression models
 
 
-First a linear regression with only fixed effects.  
-Percent female, percent college, and per capita income
-predicting whether the winner of that county is Trump or Clinton.  
+First a binomial linear regression with only one fixed effect.  
+Per capita income predicting whether the winner of that county is Trump or Clinton.  
 
-<br>
-
-Clinton coded as 1, Trump as 0.
 
 ```r
-simp_reg <- glm(winner ~ female + college + inc_percap,
+inc_reg <- glm(winner ~ inc_percap,
                 data=winner.winner, family=binomial())
-kable(tidy(simp_reg), format="markdown")
+tidy(inc_reg)
 ```
 
+```
+##          term     estimate    std.error statistic      p.value
+## 1 (Intercept) 7.263764e-01 1.895943e-01 3.8312146 0.0001275122
+## 2  inc_percap 7.451330e-06 8.062136e-06 0.9242376 0.3553626018
+```
+So there's no significant effect of income on the winner of the county (p > 0.05).  
+<br><br>
+
+Now a binomial linear regression with two fixed effects.
+The percent of the county that is female and percent with college degrees
+predicting whether the winner of that county is Trump or Clinton.  
 
 
-|term        |   estimate| std.error|  statistic|  p.value|
-|:-----------|----------:|---------:|----------:|--------:|
-|(Intercept) |  4.9841552| 1.1697130|   4.261007| 2.04e-05|
-|female      | -0.1060329| 0.0232929|  -4.552149| 5.30e-06|
-|college     | -0.0901755| 0.0084775| -10.637067| 0.00e+00|
-|inc_percap  |  0.0001298| 0.0000138|   9.375148| 0.00e+00|
-This model suggests that women and college-educated people prefer Clinton, whereas Trump does better in wealthier counties.
+Clinton is dummy coded as 0, Trump as 1.  
+
+* So, a positive beta for a given variable means that an increase in that variable means that that county is more likely to go to Trump. A negative beta means that an increase in that variable is better for Clinton.  
+
+```r
+simp_reg <- glm(winner ~ female + college,
+                data=winner.winner, family=binomial())
+tidy(simp_reg)
+```
+
+```
+##          term    estimate   std.error statistic      p.value
+## 1 (Intercept)  6.74854575 1.215942572  5.550053 2.855830e-08
+## 2      female -0.10614787 0.024412980 -4.348009 1.373787e-05
+## 3     college -0.02703089 0.004887877 -5.530189 3.198853e-08
+```
+This model suggests that women and college-educated people prefer Clinton.
 
 <br>
 
 Now a mixed model with percent female, percent college, and percent black
 predicting winner.
-Random intercept for state.
+We include a random intercept for state.  
+
+* This corrects for effects on the vote that are specific to a given state so that we can generalize this effect to the country
 
 ```r
 mixed.mod <- winner.winner %>% 
   do(tidy(glmer(winner ~ female + college + black +
                   (1 | state_abbreviation),
                 data=., family=binomial())))
-kable(mixed.mod, format="markdown")
+mixed.mod
 ```
 
-
-
-|term                              |   estimate| std.error|   statistic|   p.value|group              |
-|:---------------------------------|----------:|---------:|-----------:|---------:|:------------------|
-|(Intercept)                       |  5.5511598| 1.4328801|   3.8741272| 0.0001070|fixed              |
-|female                            | -0.0204312| 0.0282795|  -0.7224733| 0.4700036|fixed              |
-|college                           | -0.0733402| 0.0074884|  -9.7939035| 0.0000000|fixed              |
-|black                             | -0.1550231| 0.0084682| -18.3065474| 0.0000000|fixed              |
-|sd_(Intercept).state_abbreviation |  1.9742313|        NA|          NA|        NA|state_abbreviation |
-Percent black is an important factor with counties with higher black populations more likely to support Clinton.
+```
+##                                term    estimate   std.error   statistic
+## 1                       (Intercept)  5.55115977 1.432880093   3.8741272
+## 2                            female -0.02043118 0.028279495  -0.7224733
+## 3                           college -0.07334018 0.007488350  -9.7939035
+## 4                             black -0.15502308 0.008468177 -18.3065474
+## 5 sd_(Intercept).state_abbreviation  1.97423132          NA          NA
+##        p.value              group
+## 1 1.070075e-04              fixed
+## 2 4.700036e-01              fixed
+## 3 1.195878e-22              fixed
+## 4 7.337739e-75              fixed
+## 5           NA state_abbreviation
+```
+An increase in all three variables is good for Clinton. Percent black is an important factor, with the highest effect size of the three.
 
 <br><br>
 
@@ -406,8 +430,7 @@ round(importance(win.rf), 2)
 ## college           26.35 27.46                41.75           161.50
 ## inc_percap        -6.20 45.93                41.98           170.10
 ```
-Percent black seems to be particularly important  
-
+Percent black seems to be particularly important.
 
 <br><br>
 
@@ -484,6 +507,7 @@ CrossTable(nov.test.labels, nov.pred, prop.chisq = F)
 ## 
 ```
 Again, the model is better at classifying which counties Trump won based on these demographic variables than the counties that Clinton won.
+
 
 ***
 

@@ -772,24 +772,43 @@ find.outliers <- election %>%
 
 ### By state
 
-Summarise things by state
-
+Summarise various metrics by state and order by total number of votes received, descending 
 ```{r election_by_state}
 election.by.state <- election %>%
   group_by(state_abbreviation, candidate) %>%
   summarise(                 
-    w.b_gap = mean(white - black),           # w.b_gap for white-black gap
+    w.b_gap = mean(white - black),            
     fr.votes = mean(fraction_votes),
     tot.votes = sum(votes),
     percap = mean(inc_percap)
   ) %>%
   ungroup %>%
-  arrange(
-    percap
+  arrange(desc(
+    tot.votes
+  ))
+```
+
+Rename columns
+```{r rename_el_by_st}
+election.by.state_rename <- election.by.state %>% 
+  rename(
+    State = state_abbreviation,
+    Candidate = candidate,
+    `White-Black Gap` = w.b_gap,
+    `Fraction of Votes` = fr.votes,
+    `Total Votes` = tot.votes,
+    `Average Income (per capita)` = percap
   )
 ```
 
-Spread election by state
+
+Display the table of various metrics by state ordered by total number of votes
+```{r kable_by_state}
+kable(election.by.state_rename, format = "markdown", 
+      caption = "Total votes per candidate per state")
+```
+
+Spread this table to wider format, making each candidate a variable whose value is the total number of votes he or she received
 ```{r election_by_state_spread}
 election.by.state.spread <- election.by.state %>% 
   select (
@@ -803,8 +822,13 @@ election.by.state.spread <- election.by.state %>%
     key = candidate,
     value = tot.votes
   ) 
-kable(election.by.state.spread, format = "markdown")
 ```
+
+```{r kable_spread}
+kable(election.by.state.spread, format = "markdown", 
+      caption = "Total votes per candidate per state")
+```
+
 
 Graph per capita income, the white-black gap, and total votes by state
 for all three candidates

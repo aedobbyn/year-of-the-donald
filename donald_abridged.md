@@ -1,6 +1,5 @@
 # Primary Analysis, Abridged
 Amanda Dobbyn  
-`r format(Sys.Date())`  
 
 
 
@@ -14,7 +13,7 @@ Amanda Dobbyn
     + With `readr::read_csv()` rather than from a local Postgres database (as in `year_of_the_donald.Rmd`) to switch things up 
 * Join the two datasets by county code
 * Analyze:
-    + Group counties into states and from there get vote totals/averages for candidates of interest
+    + Group counties into states and from there get vote totals for general election candidates
     + Pretend that this is a head to head in the general: look at total number of votes cast for Clinton and Trump
     + Using an "all-or-nothing" scheme, calculate the "winner" of each county and each state
 * Model
@@ -60,22 +59,166 @@ For exploratory analysis, see `year_of_the_donald.Rmd`
 
 
 
-Summarise various metrics by state
+Summarise various metrics by state and order by total number of votes received, descending 
 
 ```r
 election.by.state <- election %>%
   group_by(state_abbreviation, candidate) %>%
   summarise(                 
-    w.b_gap = mean(white - black),           # w.b_gap for white-black gap
+    w.b_gap = mean(white - black),            
     fr.votes = mean(fraction_votes),
     tot.votes = sum(votes),
     percap = mean(inc_percap)
   ) %>%
   ungroup %>%
-  arrange(
-    percap
+  arrange(desc(
+    tot.votes
+  ))
+```
+
+
+```r
+election.by.state_rename <- election.by.state %>% 
+  rename(
+    State = state_abbreviation,
+    Candidate = candidate,
+    `White-Black Gap` = w.b_gap,
+    `Fraction of Votes` = fr.votes,
+    `Total Votes` = tot.votes,
+    `Average Income (per capita)` = percap
   )
 ```
+
+
+Display the table of various metrics by state ordered by total number of votes
+
+```r
+kable(election.by.state_rename, format = "markdown", 
+      caption = "Total votes per candidate per state")
+```
+
+
+
+|State |Candidate       | White-Black Gap| Fraction of Votes| Total Votes| Average Income (per capita)|
+|:-----|:---------------|---------------:|-----------------:|-----------:|---------------------------:|
+|CA    |Hillary Clinton |        78.02931|         0.5135862|     1940580|                    27255.28|
+|CA    |Bernie Sanders  |        78.02931|         0.4716207|     1502043|                    27255.28|
+|CA    |Donald Trump    |        78.02931|         0.7695000|     1174829|                    27255.28|
+|FL    |Hillary Clinton |        65.60746|         0.5562239|     1097400|                    22904.43|
+|FL    |Donald Trump    |        65.60746|         0.4927910|     1077221|                    22904.43|
+|NY    |Hillary Clinton |        80.44355|         0.4536129|     1054083|                    27608.37|
+|TX    |Hillary Clinton |        82.42244|         0.6349134|      935080|                    22813.81|
+|PA    |Hillary Clinton |        87.13134|         0.5016866|      918689|                    25173.30|
+|PA    |Donald Trump    |        87.13134|         0.6068209|      892702|                    25173.30|
+|NY    |Bernie Sanders  |        80.44355|         0.5463871|      763469|                    27608.37|
+|TX    |Donald Trump    |        82.42244|         0.2916417|      757618|                    22813.81|
+|OH    |Donald Trump    |        88.36705|         0.3893182|      727585|                    23542.81|
+|PA    |Bernie Sanders  |        87.13134|         0.4833582|      719955|                    25173.30|
+|OH    |Hillary Clinton |        88.36705|         0.5307955|      679266|                    23542.81|
+|NC    |Hillary Clinton |        53.35000|         0.5360600|      616383|                    22042.28|
+|MI    |Bernie Sanders  |        87.13373|         0.5548434|      595222|                    22830.25|
+|IN    |Donald Trump    |        91.56630|         0.5657065|      590460|                    23351.16|
+|MI    |Hillary Clinton |        87.13373|         0.4209518|      576795|                    22830.25|
+|WI    |Bernie Sanders  |        90.84306|         0.5751528|      567936|                    25372.03|
+|FL    |Bernie Sanders  |        65.60746|         0.3834179|      566603|                    22904.43|
+|NJ    |Hillary Clinton |        63.78571|         0.6000000|      554237|                    35503.71|
+|GA    |Hillary Clinton |        39.82893|         0.7351824|      543008|                    20093.77|
+|MD    |Hillary Clinton |        52.55417|         0.5607500|      533247|                    32732.46|
+|NY    |Donald Trump    |        80.44355|         0.5661774|      524932|                    27608.37|
+|OH    |Bernie Sanders  |        88.36705|         0.4536023|      513549|                    23542.81|
+|VA    |Hillary Clinton |        57.25113|         0.6384211|      503358|                    26457.60|
+|GA    |Donald Trump    |        39.82893|         0.4671447|      501707|                    20093.77|
+|MI    |Donald Trump    |        87.13373|         0.3974458|      483751|                    22830.25|
+|TX    |Bernie Sanders  |        82.42244|         0.3242598|      475561|                    22813.81|
+|NC    |Bernie Sanders  |        53.35000|         0.3886300|      460316|                    22042.28|
+|NC    |Donald Trump    |        53.35000|         0.4466700|      458151|                    22042.28|
+|IL    |Bernie Sanders  |        86.81584|         0.5240495|      452006|                    24727.96|
+|WI    |Hillary Clinton |        90.84306|         0.4200417|      432767|                    25372.03|
+|IL    |Donald Trump    |        86.81584|         0.4135941|      427086|                    24727.96|
+|WA    |Donald Trump    |        87.25128|         0.7802308|      403003|                    25290.15|
+|IL    |Hillary Clinton |        86.81584|         0.4560000|      396004|                    24727.96|
+|WI    |Donald Trump    |        90.84306|         0.4314722|      386370|                    25372.03|
+|MO    |Donald Trump    |        89.37130|         0.4572000|      382093|                    20960.84|
+|AL    |Donald Trump    |        39.60896|         0.4868657|      371735|                    20481.43|
+|NJ    |Donald Trump    |        63.78571|         0.7965238|      356697|                    35503.71|
+|VA    |Donald Trump    |        57.25113|         0.4091278|      355960|                    26457.60|
+|IN    |Bernie Sanders  |        91.56630|         0.5378696|      335256|                    23351.16|
+|TN    |Donald Trump    |        82.24947|         0.4598632|      332702|                    20801.06|
+|NJ    |Bernie Sanders  |        63.78571|         0.4000000|      323259|                    35503.71|
+|OR    |Bernie Sanders  |        90.59722|         0.5634167|      320746|                    23853.67|
+|MO    |Hillary Clinton |        89.37130|         0.4805217|      310602|                    20960.84|
+|AL    |Hillary Clinton |        39.60896|         0.7612687|      309928|                    20481.43|
+|MO    |Bernie Sanders  |        89.37130|         0.4984957|      309071|                    20960.84|
+|IN    |Hillary Clinton |        91.56630|         0.4621304|      303382|                    23351.16|
+|MD    |Bernie Sanders  |        52.55417|         0.3747083|      281275|                    32732.46|
+|VA    |Bernie Sanders  |        57.25113|         0.3552556|      275507|                    26457.60|
+|SC    |Hillary Clinton |        24.64130|         0.7853261|      271514|                    20910.52|
+|OR    |Hillary Clinton |        90.59722|         0.4365833|      251739|                    23853.67|
+|AZ    |Donald Trump    |        76.65333|         0.4890667|      249916|                    20863.93|
+|TN    |Hillary Clinton |        82.24947|         0.6377684|      245304|                    20801.06|
+|OR    |Donald Trump    |        90.59722|         0.6944444|      240804|                    23853.67|
+|SC    |Donald Trump    |        24.64130|         0.3616957|      239851|                    20910.52|
+|MD    |Donald Trump    |        52.55417|         0.5784583|      236623|                    32732.46|
+|AZ    |Hillary Clinton |        76.65333|         0.5717333|      235697|                    20863.93|
+|LA    |Hillary Clinton |        32.54531|         0.6724844|      221615|                    21658.66|
+|GA    |Bernie Sanders  |        39.82893|         0.2519371|      214332|                    20093.77|
+|KY    |Hillary Clinton |        90.01250|         0.4211500|      212550|                    20179.03|
+|KY    |Bernie Sanders  |        90.01250|         0.4880083|      210626|                    20179.03|
+|MS    |Donald Trump    |        15.27683|         0.5030000|      191755|                    18341.73|
+|MS    |Hillary Clinton |        15.27683|         0.8278659|      182447|                    18341.73|
+|OK    |Bernie Sanders  |        74.62597|         0.5391818|      174054|                    21907.58|
+|AZ    |Bernie Sanders  |        76.65333|         0.3851333|      163400|                    20863.93|
+|WV    |Donald Trump    |        93.18909|         0.7914909|      156245|                    21043.82|
+|AR    |Hillary Clinton |        64.27333|         0.6397733|      144580|                    19443.19|
+|OK    |Hillary Clinton |        74.62597|         0.3451818|      139338|                    21907.58|
+|AR    |Donald Trump    |        64.27333|         0.3744667|      133144|                    19443.19|
+|OK    |Donald Trump    |        74.62597|         0.3146104|      130141|                    21907.58|
+|LA    |Donald Trump    |        32.54531|         0.4406719|      124818|                    21658.66|
+|WV    |Bernie Sanders  |        93.18909|         0.5246000|      123860|                    21043.82|
+|NE    |Donald Trump    |        94.50000|         0.6474409|      121287|                    24756.12|
+|TN    |Bernie Sanders  |        82.24947|         0.3346000|      120333|                    20801.06|
+|MT    |Donald Trump    |        88.40000|         0.7566607|      114056|                    24169.70|
+|NM    |Hillary Clinton |        84.19697|         0.5198485|      110451|                    21684.76|
+|NM    |Bernie Sanders  |        84.19697|         0.4801818|      103856|                    21684.76|
+|SC    |Bernie Sanders  |        24.64130|         0.2078478|       95977|                    20910.52|
+|WV    |Hillary Clinton |        93.18909|         0.3378000|       86354|                    21043.82|
+|KY    |Donald Trump    |        90.01250|         0.3998833|       82493|                    20179.03|
+|AL    |Bernie Sanders  |        39.60896|         0.1927313|       76399|                    20481.43|
+|NM    |Donald Trump    |        84.19697|         0.7065758|       73530|                    21684.76|
+|LA    |Bernie Sanders  |        32.54531|         0.2324531|       72240|                    21658.66|
+|CO    |Bernie Sanders  |        90.80781|         0.5659688|       71928|                    27625.89|
+|IA    |Hillary Clinton |        94.26263|         0.5187374|       69733|                    25615.56|
+|IA    |Bernie Sanders  |        94.26263|         0.4725152|       69452|                    25615.56|
+|AR    |Bernie Sanders  |        64.27333|         0.2901733|       64868|                    19443.19|
+|MT    |Bernie Sanders  |        88.40000|         0.4852500|       63168|                    24169.70|
+|ID    |Donald Trump    |        93.77500|         0.3085909|       62478|                    20982.14|
+|UT    |Bernie Sanders  |        92.22069|         0.6667241|       61333|                    22237.24|
+|DE    |Hillary Clinton |        51.66667|         0.5990000|       55950|                    28055.00|
+|MT    |Hillary Clinton |        88.40000|         0.4531607|       55194|                    24169.70|
+|CO    |Hillary Clinton |        90.80781|         0.3960625|       49256|                    27625.89|
+|IA    |Donald Trump    |        94.26263|         0.2687172|       45419|                    25615.56|
+|SD    |Donald Trump    |        81.73182|         0.6864697|       44866|                    24056.05|
+|DE    |Donald Trump    |        51.66667|         0.6246667|       42472|                    28055.00|
+|DE    |Bernie Sanders  |        51.66667|         0.3866667|       36659|                    28055.00|
+|MS    |Bernie Sanders  |        15.27683|         0.1593537|       36348|                    18341.73|
+|NV    |Donald Trump    |        84.46471|         0.4298235|       34531|                    25841.82|
+|SD    |Hillary Clinton |        81.73182|         0.5030758|       27046|                    24056.05|
+|SD    |Bernie Sanders  |        81.73182|         0.4969242|       25958|                    24056.05|
+|UT    |Donald Trump    |        92.22069|         0.2047586|       24864|                    22237.24|
+|HI    |Bernie Sanders  |        30.35000|         0.7397500|       23531|                    27792.75|
+|WA    |Bernie Sanders  |        87.25128|         0.7612308|       19159|                    25290.15|
+|NE    |Bernie Sanders  |        94.50000|         0.4922043|       19120|                    24756.12|
+|ID    |Bernie Sanders  |        93.77500|         0.7114318|       18640|                    20982.14|
+|UT    |Hillary Clinton |        92.22069|         0.2094828|       15666|                    22237.24|
+|NE    |Hillary Clinton |        94.50000|         0.4863118|       14340|                    24756.12|
+|HI    |Hillary Clinton |        30.35000|         0.2585000|       10127|                    27792.75|
+|WA    |Hillary Clinton |        87.25128|         0.2361538|        7140|                    25290.15|
+|NV    |Hillary Clinton |        84.46471|         0.4555882|        6296|                    25841.82|
+|HI    |Donald Trump    |        30.35000|         0.4450000|        5677|                    27792.75|
+|NV    |Bernie Sanders  |        84.46471|         0.5415294|        5641|                    25841.82|
+|ID    |Hillary Clinton |        93.77500|         0.2782727|        5065|                    20982.14|
+|WY    |Bernie Sanders  |        92.87826|         0.5601739|         156|                    28546.30|
+|WY    |Hillary Clinton |        92.87826|         0.4398261|         124|                    28546.30|
 
 Spread this table to wider format, making each candidate a variable whose value is the total number of votes he or she received
 
@@ -301,7 +444,6 @@ clinton.lead.plot
 
 <br>
 
-### Integrate demographic variables
 For each county, plot fraction of votes received against percent white for each candidate
 
 ```r

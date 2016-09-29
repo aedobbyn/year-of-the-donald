@@ -23,7 +23,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8)
     + With `readr::read_csv()` rather than from a local Postgres database (as in `year_of_the_donald.Rmd`) to switch things up 
 * Join the two datasets by county code
 * Analyze:
-    + Group counties into states and from there get vote totals/averages for candidates of interest
+    + Group counties into states and from there get vote totals for general election candidates
     + Pretend that this is a head to head in the general: look at total number of votes cast for Clinton and Trump
     + Using an "all-or-nothing" scheme, calculate the "winner" of each county and each state
 * Model
@@ -246,20 +246,39 @@ head(combo.by.state.spread[, c('state_abbreviation', 'Winner')])
 
 
 
-Summarise various metrics by state
+Summarise various metrics by state and order by total number of votes received, descending 
 ```{r election_by_state}
 election.by.state <- election %>%
   group_by(state_abbreviation, candidate) %>%
   summarise(                 
-    w.b_gap = mean(white - black),           # w.b_gap for white-black gap
+    w.b_gap = mean(white - black),            
     fr.votes = mean(fraction_votes),
     tot.votes = sum(votes),
     percap = mean(inc_percap)
   ) %>%
   ungroup %>%
-  arrange(
-    percap
+  arrange(desc(
+    tot.votes
+  ))
+```
+
+```{r rename_el_by_st, results="hide"}
+election.by.state_rename <- election.by.state %>% 
+  rename(
+    State = state_abbreviation,
+    Candidate = candidate,
+    `White-Black Gap` = w.b_gap,
+    `Fraction of Votes` = fr.votes,
+    `Total Votes` = tot.votes,
+    `Average Income (per capita)` = percap
   )
+```
+
+
+Display the table of various metrics by state ordered by total number of votes
+```{r kable_by_state}
+kable(election.by.state_rename, format = "markdown", 
+      caption = "Total votes per candidate per state")
 ```
 
 Spread this table to wider format, making each candidate a variable whose value is the total number of votes he or she received
@@ -278,7 +297,7 @@ election.by.state.spread <- election.by.state %>%
   ) 
 ```
 
-```{r pretty_kable}
+```{r kable_spread}
 kable(election.by.state.spread, format = "markdown", 
       caption = "Total votes per candidate per state")
 ```

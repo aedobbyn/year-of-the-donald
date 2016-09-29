@@ -9,6 +9,7 @@ Amanda Dobbyn
 * About:
     + This is a shortened version of `year_of_the_donald.Rmd` and `year_of_the_donald.R` that omits most of the code to focus on the models and graphs
     + Data from [Kaggle](https://www.kaggle.com/datasets) can be found in `county_facts_abr.csv` and `primary_results.csv`
+    + This analysis isn't meant to be descriptive or predictive of anything; it is  an exercise in data science techniques. Among the many false equivalencies in this analysis, the main one is comparing the Republican primary to the Democratic one and combining these results into one mock general election.
 * Load data:
     + With `readr::read_csv()` rather than from a local Postgres database (as in `year_of_the_donald.Rmd`) to switch things up 
 * Join the two datasets by county code
@@ -382,8 +383,11 @@ Classify the winner of each county (Trump or Clinton) from county demographic va
 
 * DV = winner
 * IVs = population, percent female, percent black, percent hispanic, percent college educated, per capita income
-* 6 IVs so set `mtry` to sqrt(6) or 2
-Print the confusion matrix
+* 6 IVs so set `mtry` (number of variables sampled at each split) to `sqrt(6)`, or 2  
+
+<br>
+
+Run the model and print the confusion matrix.
 
 ```r
 win.rf <- randomForest(winner ~ population_2014 + female + black +
@@ -411,7 +415,7 @@ print(win.rf)
 ## Clinton     401   384  0.48917197
 ## Trump       116  1810  0.06022845
 ```
-The algorithm classifies Trump better than Clinton, maybe because he won more overall counties (more data --> better prediction).  
+The algorithm classifies Trump better than Clinton, maybe because he won more overall counties (more data --> better prediction) or becasue the counties he wins are more homogeneous than the counties that Clinton tends to win making his wins easier to classify.  
 
 <br>
 
@@ -430,12 +434,14 @@ round(importance(win.rf), 2)
 ## college           26.35 27.46                41.75           161.50
 ## inc_percap        -6.20 45.93                41.98           170.10
 ```
-Percent black seems to be particularly important.
+Percent black seems to be particularly important. (The importance of sex is probably understated here because this is at the county level and not the individual level. Most counties are split about 50-50 male-female but they differ much more in percent of their population that is a minority.)
 
 <br><br>
 
 
 #### K Nearest Neighbors
+
+Prepare and the data for the model:  
 
 * Make a new dataframe with only the columns we want to keep
 * Normalize the predictor variables
@@ -451,7 +457,8 @@ Percent black seems to be particularly important.
 
 <br>
 
-Here's the model and some of the precited vector.
+Save the output of the model in a vecotr of precited values, `nov.pred`.  
+Print the first ten values of the vector.
 
 ```r
 nov.pred <- knn(train=nov.train, test=nov.test, cl=nov.train.labels, k=3, prob=T)

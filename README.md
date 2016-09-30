@@ -2,7 +2,7 @@
 Mock 2016 general election analysis using 2016 primary data joined with demographic data about each county. A couple machine learning algorithms predict which candidate wins each county.  
 Full report in [`year_of_the_donald.md`](https://github.com/aedobbyn/year-of-the-donald/blob/master/full_report/year_of_the_donald.md); abridged report in [`donald_abridged.md`](https://github.com/aedobbyn/year-of-the-donald/blob/master/abridged/donald_abridged.md) (less code, more output).
 
-![white_plot](./donald_abridged_files/figure-html/white_plot-1.png)
+![white_plot](./abridged/donald_abridged_files/figure-html/white_plot-1.png)
 
 ## Workflow
 * Import data from local SQL database
